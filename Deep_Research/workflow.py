@@ -7,8 +7,8 @@ from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver
 import logging
 from datetime import datetime
+import json
 
-# PDF generation imports
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter, A4
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
@@ -17,10 +17,9 @@ from reportlab.lib.units import inch
 from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_JUSTIFY
 import textwrap
 
-from .planner_agent import AgriculturalPlanningAgent
-from .SubsearchAgent import EnhancedSubsearchAgent
-from .citations_agent import EnhancedCitationAgent
-from .report_agent import EnhancedReportAgent
+from planner_agent import AgriculturalPlanningAgent
+from SubsearchAgent import EnhancedSubsearchAgent
+from citations_agent import EnhancedCitationAgent
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -37,8 +36,6 @@ class ResearchState:
     
     research_results: Dict[str, Any] = None
     citation_results: Dict[str, Any] = None
-    
-    final_report: Any = None
     
     current_phase: str = "initialized"
     errors: List[str] = None
@@ -62,49 +59,58 @@ class PDFReportGenerator:
         self._setup_custom_styles()
     
     def _setup_custom_styles(self):
-        if 'CustomTitle' not in self.styles:
-            self.styles.add(ParagraphStyle(
+        custom_styles = {
+            'CustomTitle': ParagraphStyle(
                 name='CustomTitle',
                 parent=self.styles['Title'],
                 fontSize=18,
                 textColor=colors.darkgreen,
                 alignment=TA_CENTER,
                 spaceAfter=20
-            ))
-        if 'SectionHeader' not in self.styles:
-            self.styles.add(ParagraphStyle(
+            ),
+            'SectionHeader': ParagraphStyle(
                 name='SectionHeader',
                 parent=self.styles['Heading2'],
                 fontSize=14,
                 textColor=colors.darkblue,
                 spaceAfter=12,
                 spaceBefore=16
-            ))
-        if 'SubHeader' not in self.styles:
-            self.styles.add(ParagraphStyle(
+            ),
+            'SubHeader': ParagraphStyle(
                 name='SubHeader',
                 parent=self.styles['Heading3'],
                 fontSize=12,
                 textColor=colors.darkred,
                 spaceAfter=8,
                 spaceBefore=12
-            ))
-        if 'CustomBodyText' not in self.styles:
-            self.styles.add(ParagraphStyle(
+            ),
+            'CustomBodyText': ParagraphStyle(
                 name='CustomBodyText',
                 parent=self.styles['Normal'],
                 fontSize=10,
                 alignment=TA_JUSTIFY,
                 spaceAfter=6
-            ))
-        if 'Citation' not in self.styles:
-            self.styles.add(ParagraphStyle(
+            ),
+            'Citation': ParagraphStyle(
                 name='Citation',
                 parent=self.styles['Normal'],
                 fontSize=9,
                 leftIndent=20,
                 spaceAfter=4
-            ))
+            ),
+            'ResearchContent': ParagraphStyle(
+                name='ResearchContent',
+                parent=self.styles['Normal'],
+                fontSize=10,
+                alignment=TA_JUSTIFY,
+                spaceAfter=8,
+                leftIndent=10
+            )
+        }
+        
+        for name, style in custom_styles.items():
+            if name not in self.styles:
+                self.styles.add(style)
     
     def _sanitize_text(self, text: str) -> str:
         if not text:
@@ -116,32 +122,34 @@ class PDFReportGenerator:
         return text
     
     def generate_pdf_report(self, results: Dict[str, Any], filename: str):
-        os.makedirs('Reports', exist_ok=True)
-        
-        doc = SimpleDocTemplate(filename, pagesize=A4, 
-                               rightMargin=72, leftMargin=72,
-                               topMargin=72, bottomMargin=18)
-        
-        story = []
-        
-        story.extend(self._create_title_page(results))
-        story.append(PageBreak())
-        
-        story.extend(self._create_executive_summary(results))
-        story.append(PageBreak())
-        
-        story.extend(self._create_research_details(results))
-        
-        if results.get('final_report'):
-            story.extend(self._create_main_content(results['final_report']))
-        
-        if results.get('citation_results'):
-            story.extend(self._create_citations_section(results['citation_results']))
-        
-        story.extend(self._create_appendix(results))
-        
-        doc.build(story)
-        logger.info(f"PDF report generated: {filename}")
+        try:
+            os.makedirs(os.path.dirname(filename), exist_ok=True)
+            
+            doc = SimpleDocTemplate(filename, pagesize=A4, 
+                                   rightMargin=72, leftMargin=72,
+                                   topMargin=72, bottomMargin=18)
+            
+            story = []
+            
+            story.extend(self._create_title_page(results))
+            story.append(PageBreak())
+            
+            story.extend(self._create_executive_summary(results))
+            story.append(PageBreak())
+            
+            story.extend(self._create_research_content(results))
+            story.append(PageBreak())
+            
+            story.extend(self._create_citations_section(results))
+            
+            story.extend(self._create_appendix(results))
+            
+            doc.build(story)
+            logger.info(f"PDF report generated: {filename}")
+            
+        except Exception as e:
+            logger.error(f"PDF generation error: {str(e)}")
+            raise e
     
     def _create_title_page(self, results: Dict[str, Any]) -> List:
         elements = []
@@ -202,7 +210,7 @@ class PDFReportGenerator:
         
         summary_text = f"""
         This comprehensive agricultural research study was conducted using an automated 
-        deep research workflow. The research successfully completed {phases_completed} out of 5 
+        deep research workflow. The research successfully completed {phases_completed} out of 4 
         planned phases with {errors_count} errors encountered during execution.
         """
         
@@ -228,90 +236,66 @@ class PDFReportGenerator:
         if citations and citations.get('success'):
             components.append(f"{citations.get('valid_count', 0)} validated citations collected")
         
-        if results.get('final_report'):
-            components.append("Comprehensive research report generated")
+        components.append("Comprehensive research report generated")
         
         for component in components:
             elements.append(Paragraph(self._sanitize_text(component), self.styles['CustomBodyText']))
         
         return elements
     
-    def _create_research_details(self, results: Dict[str, Any]) -> List:
-        elements = []
-        
-        elements.append(Paragraph("RESEARCH METHODOLOGY", self.styles['SectionHeader']))
-        
-        methodology_text = """
-        This research employed a multi-phase automated approach combining strategic planning,
-        parallel research execution, comprehensive citation gathering, and quality validation.
-        The methodology ensures thorough coverage of the research topic while maintaining
-        high standards of academic rigor.
-        """
-        
-        elements.append(Paragraph(self._sanitize_text(methodology_text.strip()), 
-                                self.styles['CustomBodyText']))
-        
-        elements.append(Paragraph("Research Phases", self.styles['SubHeader']))
-        
-        phase_descriptions = [
-            ("Planning Phase", "Strategic decomposition of research objectives into actionable tasks"),
-            ("Research Execution", "Multi-threaded information gathering from diverse sources"),
-            ("Citation Gathering", "Academic source validation and bibliography compilation"),
-            ("Report Generation", "Synthesis of findings into comprehensive documentation"),
-            ("Quality Validation", "Assessment of research completeness and reliability")
-        ]
-        
-        for phase_name, description in phase_descriptions:
-            phase_text = f"<b>{phase_name}:</b> {description}"
-            elements.append(Paragraph(self._sanitize_text(phase_text), self.styles['CustomBodyText']))
-        
-        elements.append(Spacer(1, 12))
-        
-        return elements
-    
-    def _create_main_content(self, report) -> List:
+    def _create_research_content(self, results: Dict[str, Any]) -> List:
         elements = []
         
         elements.append(Paragraph("RESEARCH FINDINGS", self.styles['SectionHeader']))
         
-        if hasattr(report, 'content') and report.content:
-            content = self._sanitize_text(report.content)
+        research_results = results.get('research_results', {})
+        if research_results and research_results.get('success'):
+            combined_content = research_results.get('combined_content', '')
+            search_results = research_results.get('search_results', [])
             
-            paragraphs = content.split('\n\n')
-            
-            for paragraph in paragraphs:
-                if paragraph.strip():
-                    if paragraph.strip().startswith('###'):
-                        header_text = paragraph.replace('###', '').strip()
-                        elements.append(Paragraph(header_text, self.styles['SubHeader']))
-                    elif paragraph.strip().startswith('##'):
-                        header_text = paragraph.replace('##', '').strip()
-                        elements.append(Paragraph(header_text, self.styles['SectionHeader']))
-                    else:
-                        elements.append(Paragraph(paragraph.strip(), self.styles['CustomBodyText']))
+            if combined_content:
+                elements.append(Paragraph("Research Summary", self.styles['SubHeader']))
+                
+                paragraphs = combined_content.split('\n\n')
+                for paragraph in paragraphs[:10]:
+                    if paragraph.strip():
+                        elements.append(Paragraph(self._sanitize_text(paragraph.strip()), 
+                                                self.styles['ResearchContent']))
                         elements.append(Spacer(1, 6))
-        
-        if hasattr(report, 'quality_metrics') and report.quality_metrics:
-            elements.append(Paragraph("Report Quality Metrics", self.styles['SubHeader']))
             
-            metrics = report.quality_metrics
-            metrics_text = f"""
-            Report Completeness: {metrics.get('report_completeness', 'Unknown')}<br/>
-            Total Sections: {metrics.get('total_sections', '0')}<br/>
-            High Confidence Sections: {metrics.get('high_confidence_sections', '0')}<br/>
-            Word Count: {metrics.get('word_count', 'Not calculated')}
-            """
-            
-            elements.append(Paragraph(metrics_text, self.styles['CustomBodyText']))
+            if search_results:
+                elements.append(Spacer(1, 12))
+                elements.append(Paragraph("Detailed Research Results", self.styles['SubHeader']))
+                
+                for i, result in enumerate(search_results[:5], 1):
+                    if isinstance(result, dict):
+                        query = result.get('query', f'Research Query {i}')
+                        content = result.get('combined_content', result.get('content', ''))
+                        sources_count = result.get('sources_found', 0)
+                        
+                        elements.append(Paragraph(f"Research Area {i}: {self._sanitize_text(query)}", 
+                                                self.styles['SubHeader']))
+                        elements.append(Paragraph(f"Sources Found: {sources_count}", 
+                                                self.styles['CustomBodyText']))
+                        
+                        if content:
+                            content_preview = content[:800] + "..." if len(content) > 800 else content
+                            elements.append(Paragraph(self._sanitize_text(content_preview), 
+                                                    self.styles['ResearchContent']))
+                        
+                        elements.append(Spacer(1, 10))
+        else:
+            elements.append(Paragraph("Research data collection encountered issues. Please refer to the appendix for execution details.", 
+                                    self.styles['CustomBodyText']))
         
         return elements
     
-    def _create_citations_section(self, citation_results: Dict[str, Any]) -> List:
+    def _create_citations_section(self, results: Dict[str, Any]) -> List:
         elements = []
         
-        elements.append(PageBreak())
         elements.append(Paragraph("REFERENCES AND CITATIONS", self.styles['SectionHeader']))
         
+        citation_results = results.get('citation_results', {})
         if citation_results.get('success') and citation_results.get('citations'):
             citations = citation_results['citations']
             
@@ -319,14 +303,8 @@ class PDFReportGenerator:
                                     self.styles['CustomBodyText']))
             elements.append(Spacer(1, 12))
             
-            for i, citation in enumerate(citations[:20], 1):
-                if hasattr(citation, 'to_apa'):
-                    citation_text = f"{i}. {citation.to_apa()}"
-                    if hasattr(citation, 'url') and citation.url:
-                        citation_text += f" Available at: {citation.url}"
-                else:
-                    citation_text = f"{i}. {str(citation)}"
-                
+            for i, citation in enumerate(citations, 1):
+                citation_text = self._format_citation(citation, i)
                 elements.append(Paragraph(self._sanitize_text(citation_text), 
                                         self.styles['Citation']))
                 elements.append(Spacer(1, 4))
@@ -334,7 +312,37 @@ class PDFReportGenerator:
             elements.append(Paragraph("No citations were successfully gathered during this research.",
                                     self.styles['CustomBodyText']))
         
+        if citation_results.get('search_queries'):
+            elements.append(Spacer(1, 15))
+            elements.append(Paragraph("Citation Search Queries", self.styles['SubHeader']))
+            for query in citation_results['search_queries']:
+                elements.append(Paragraph(f"• {self._sanitize_text(query)}", 
+                                        self.styles['Citation']))
+        
         return elements
+    
+    def _format_citation(self, citation, index):
+        if hasattr(citation, 'title') and hasattr(citation, 'authors'):
+            citation_text = f"{index}. {citation.authors} ({getattr(citation, 'year', 'N/A')}). {citation.title}."
+            if hasattr(citation, 'journal') and citation.journal:
+                citation_text += f" {citation.journal}."
+            if hasattr(citation, 'url') and citation.url:
+                citation_text += f" Available at: {citation.url}"
+        elif hasattr(citation, 'to_apa'):
+            citation_text = f"{index}. {citation.to_apa()}"
+            if hasattr(citation, 'url') and citation.url:
+                citation_text += f" Available at: {citation.url}"
+        elif isinstance(citation, dict):
+            title = citation.get('title', 'Unknown Title')
+            authors = citation.get('authors', 'Unknown Authors')
+            year = citation.get('year', 'N/A')
+            citation_text = f"{index}. {authors} ({year}). {title}."
+            if citation.get('url'):
+                citation_text += f" Available at: {citation['url']}"
+        else:
+            citation_text = f"{index}. {str(citation)}"
+        
+        return citation_text
     
     def _create_appendix(self, results: Dict[str, Any]) -> List:
         elements = []
@@ -358,12 +366,22 @@ class PDFReportGenerator:
                 elements.append(Paragraph(f"• {self._sanitize_text(error)}", 
                                         self.styles['Citation']))
         
+        research_results = results.get('research_results', {})
+        if research_results.get('execution_details'):
+            elements.append(Spacer(1, 12))
+            elements.append(Paragraph("Research Execution Details", self.styles['SubHeader']))
+            
+            details = research_results['execution_details']
+            for key, value in details.items():
+                elements.append(Paragraph(f"{key}: {self._sanitize_text(str(value))}", 
+                                        self.styles['Citation']))
+        
         elements.append(Spacer(1, 12))
         elements.append(Paragraph("Technical Specifications", self.styles['SubHeader']))
         
         tech_specs = f"""
         Research Framework: LangGraph Multi-Agent System<br/>
-        Agents Employed: Planning, Research, Citation, Report Generation<br/>
+        Agents Employed: Planning, Research, Citation<br/>
         Execution Mode: Asynchronous Multi-threaded<br/>
         Quality Validation: Automated Assessment<br/>
         Report Format: PDF with structured sections<br/>
@@ -379,7 +397,6 @@ class DeepResearchWorkflow:
         self.planner = AgriculturalPlanningAgent()
         self.subsearch_agent = EnhancedSubsearchAgent(max_workers=4)
         self.citation_agent = EnhancedCitationAgent()
-        self.report_agent = EnhancedReportAgent()
         self.pdf_generator = PDFReportGenerator()
         
         self.graph = self._build_workflow_graph()
@@ -391,15 +408,13 @@ class DeepResearchWorkflow:
         workflow.add_node("planning", self._planning_phase)
         workflow.add_node("research_execution", self._research_execution_phase)
         workflow.add_node("citation_gathering", self._citation_gathering_phase)
-        workflow.add_node("report_generation", self._report_generation_phase)
         workflow.add_node("quality_validation", self._quality_validation_phase)
         
         workflow.set_entry_point("planning")
         
         workflow.add_edge("planning", "research_execution")
         workflow.add_edge("research_execution", "citation_gathering")
-        workflow.add_edge("citation_gathering", "report_generation")
-        workflow.add_edge("report_generation", "quality_validation")
+        workflow.add_edge("citation_gathering", "quality_validation")
         workflow.add_edge("quality_validation", END)
         
         return workflow
@@ -414,18 +429,46 @@ class DeepResearchWorkflow:
         self._log_phase(state, "planning", "Starting research planning phase")
         state.current_phase = "planning"
         
+        print(f"\n{'='*80}")
+        print(f"PLANNING PHASE - Generating research plan")
+        print(f"Title: {state.title}")
+        print(f"Objective: {state.objective}")
+        print(f"{'='*80}")
+        
         try:
+            planning_start = datetime.now()
             plan = self.planner.create_plan(state.title, state.objective)
-            state.plan = plan
-            state.tasks = plan.tasks
+            planning_time = (datetime.now() - planning_start).total_seconds()
             
-            self._log_phase(state, "planning", f"Generated {len(plan.tasks)} research tasks")
-            self._log_phase(state, "planning", f"Agent assignments: {len(plan.agent_assignments)} specialists")
+            state.plan = plan
+            state.tasks = plan.tasks if hasattr(plan, 'tasks') else []
+            
+            print(f"✓ Planning completed in {planning_time:.2f}s")
+            print(f"  Generated {len(state.tasks)} research tasks")
+            
+            agent_assignments = getattr(plan, 'agent_assignments', [])
+            print(f"  Agent assignments: {len(agent_assignments)} specialists")
+            
+            if state.tasks:
+                print(f"\n📋 Research tasks created:")
+                print(f"{'-'*60}")
+                for i, task in enumerate(state.tasks[:5], 1):
+                    task_desc = getattr(task, 'description', str(task))[:70]
+                    if len(task_desc) > 70:
+                        task_desc += "..."
+                    print(f"{i}. {task_desc}")
+                
+                if len(state.tasks) > 5:
+                    print(f"... and {len(state.tasks) - 5} more tasks")
+            
+            self._log_phase(state, "planning", f"Generated {len(state.tasks)} research tasks")
+            self._log_phase(state, "planning", f"Agent assignments: {len(agent_assignments)} specialists")
             
         except Exception as e:
             error_msg = f"Planning phase failed: {str(e)}"
             state.errors.append(error_msg)
             self._log_phase(state, "planning", error_msg)
+            print(f"✗ Planning failed: {str(e)}")
         
         return state
 
@@ -450,21 +493,137 @@ class DeepResearchWorkflow:
             
             research_queries = research_queries[:8]
             
-            research_results = self.subsearch_agent.search_optimized(research_queries)
+            print(f"\n{'='*80}")
+            print(f"RESEARCH EXECUTION - Processing {len(research_queries)} queries")
+            print(f"{'='*80}")
+            
+            research_results = self._execute_research_with_display(research_queries)
             
             state.research_results = research_results
             
             if research_results.get('success'):
                 self._log_phase(state, "research", f"Research completed: {research_results.get('successful_searches', 0)} successful queries")
+                print(f"\n✓ Research phase completed successfully!")
+                print(f"  Total sources found: {research_results.get('total_sources_found', 0)}")
+                print(f"  Execution time: {research_results.get('total_execution_time', 0):.2f}s")
             else:
                 self._log_phase(state, "research", "Research execution completed with limited results")
+                print(f"\n⚠ Research phase completed with limited results")
             
         except Exception as e:
             error_msg = f"Research execution failed: {str(e)}"
             state.errors.append(error_msg)
             self._log_phase(state, "research", error_msg)
+            state.research_results = {"success": False, "error": str(e)}
+            print(f"\n✗ Research phase failed: {str(e)}")
         
         return state
+
+    def _execute_research_with_display(self, research_queries: List[str]) -> Dict[str, Any]:
+        """Execute research queries with real-time terminal display of results"""
+        try:
+            results = {
+                "success": False,
+                "search_results": [],
+                "combined_content": "",
+                "successful_searches": 0,
+                "queries_processed": len(research_queries),
+                "total_sources_found": 0,
+                "total_execution_time": 0,
+                "execution_details": {}
+            }
+            
+            start_time = datetime.now()
+            all_content = []
+            
+            for i, query in enumerate(research_queries, 1):
+                print(f"\n[Query {i}/{len(research_queries)}] Searching: {query}")
+                print(f"{'-'*60}")
+                
+                query_start = datetime.now()
+                
+                try:
+                    # Use the correct method name from SubsearchAgent
+                    query_result = self.subsearch_agent.subsearch_single_query(query)
+                    query_time = (datetime.now() - query_start).total_seconds()
+                    
+                    if query_result and query_result.get('success'):
+                        sources_found = len(query_result.get('sources', []))
+                        content = query_result.get('combined_content', '')
+                        
+                        print(f"✓ Success: Found {sources_found} sources in {query_time:.2f}s")
+                        
+                        if content:
+                            content_preview = content[:300].replace('\n', ' ')
+                            if len(content) > 300:
+                                content_preview += "..."
+                            print(f"📄 Content preview: {content_preview}")
+                            all_content.append(content)
+                        
+                        results["search_results"].append({
+                            "query": query,
+                            "success": True,
+                            "sources_found": sources_found,
+                            "combined_content": content,
+                            "execution_time": query_time,
+                            "sources": query_result.get('sources', [])
+                        })
+                        
+                        results["successful_searches"] += 1
+                        results["total_sources_found"] += sources_found
+                        
+                        if query_result.get('sources'):
+                            print(f"🔗 Top sources:")
+                            for j, source in enumerate(query_result['sources'][:3], 1):
+                                if isinstance(source, dict):
+                                    title = source.get('title', 'Unknown Title')[:50]
+                                    url = source.get('url', 'No URL')[:60]
+                                    print(f"   {j}. {title} - {url}")
+                    else:
+                        print(f"✗ Failed: No results found in {query_time:.2f}s")
+                        results["search_results"].append({
+                            "query": query,
+                            "success": False,
+                            "error": query_result.get('error', 'Unknown error') if query_result else 'No response from search agent',
+                            "execution_time": query_time
+                        })
+                
+                except Exception as e:
+                    query_time = (datetime.now() - query_start).total_seconds()
+                    print(f"✗ Error: {str(e)} (took {query_time:.2f}s)")
+                    results["search_results"].append({
+                        "query": query,
+                        "success": False,
+                        "error": str(e),
+                        "execution_time": query_time
+                    })
+            
+            total_time = (datetime.now() - start_time).total_seconds()
+            results["total_execution_time"] = total_time
+            results["combined_content"] = "\n\n".join(all_content)
+            results["success"] = results["successful_searches"] > 0
+            
+            print(f"\n{'='*60}")
+            print(f"RESEARCH SUMMARY:")
+            print(f"  Successful queries: {results['successful_searches']}/{results['queries_processed']}")
+            print(f"  Total sources: {results['total_sources_found']}")
+            print(f"  Content length: {len(results['combined_content'])} characters")
+            print(f"  Total time: {total_time:.2f}s")
+            print(f"{'='*60}")
+            
+            return results
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+                "search_results": [],
+                "combined_content": "",
+                "successful_searches": 0,
+                "queries_processed": len(research_queries),
+                "total_sources_found": 0,
+                "total_execution_time": 0
+            }
 
     def _citation_gathering_phase(self, state: ResearchState) -> ResearchState:
         self._log_phase(state, "citations", "Starting citation gathering phase")
@@ -472,76 +631,110 @@ class DeepResearchWorkflow:
         
         try:
             search_topic = f"{state.title} {state.objective}"
-            num_citations = 15
+            if state.focus_areas:
+                search_topic += f" {' '.join(state.focus_areas)}"
             
+            num_citations = 20
+            
+            print(f"\n{'='*80}")
+            print(f"CITATION GATHERING - Searching for {num_citations} citations")
+            print(f"Topic: {search_topic}")
+            print(f"{'='*80}")
+            
+            citation_start = datetime.now()
             citation_results = self.citation_agent.find_citations_basic(
                 topic=search_topic,
                 num_citations=num_citations
             )
+            citation_time = (datetime.now() - citation_start).total_seconds()
             
             state.citation_results = citation_results
             
-            valid_citations = citation_results.get('valid_count', 0) if citation_results.get('success') else 0
+            valid_citations = citation_results.get('valid_count', 0) if citation_results and citation_results.get('success') else 0
+            total_found = citation_results.get('total_found', 0) if citation_results else 0
+            
+            if citation_results and citation_results.get('success'):
+                print(f"✓ Citation search completed in {citation_time:.2f}s")
+                print(f"  Valid citations: {valid_citations}")
+                print(f"  Total examined: {total_found}")
+                
+                if citation_results.get('citations') and len(citation_results['citations']) > 0:
+                    print(f"\n📚 Sample citations found:")
+                    print(f"{'-'*60}")
+                    for i, citation in enumerate(citation_results['citations'][:5], 1):
+                        citation_preview = self._get_citation_preview(citation)
+                        print(f"{i}. {citation_preview}")
+                    
+                    if len(citation_results['citations']) > 5:
+                        print(f"... and {len(citation_results['citations']) - 5} more")
+                
+                print(f"✓ Citation gathering successful!")
+            else:
+                print(f"⚠ Citation search completed with limited results in {citation_time:.2f}s")
+                print(f"  Valid citations: {valid_citations}")
+                
             self._log_phase(state, "citations", f"Citation search completed: {valid_citations} valid citations found")
             
         except Exception as e:
             error_msg = f"Citation gathering failed: {str(e)}"
             state.errors.append(error_msg)
             self._log_phase(state, "citations", error_msg)
+            state.citation_results = {"success": False, "error": str(e)}
+            print(f"✗ Citation gathering failed: {str(e)}")
         
         return state
-
-    def _report_generation_phase(self, state: ResearchState) -> ResearchState:
-        self._log_phase(state, "report", "Starting comprehensive report generation")
-        state.current_phase = "report_generation"
-        
+    
+    def _get_citation_preview(self, citation) -> str:
+        """Get a short preview of a citation for display"""
         try:
-            research_data = ""
-            if state.research_results and state.research_results.get('success'):
-                research_data = state.research_results.get('combined_content', '')
-            
-            citation_data = ""
-            if state.citation_results and state.citation_results.get('success'):
-                citations = state.citation_results.get('citations', [])
-                citation_data = "\n".join([f"- {c.to_apa()} ({c.url})" for c in citations[:10] if hasattr(c, 'to_apa')])
-            
-            if not research_data and not citation_data:
-                research_data = f"Research objective: {state.objective}\nLocation: {state.location}"
-                if state.focus_areas:
-                    research_data += f"\nFocus areas: {', '.join(state.focus_areas)}"
-            
-            report = self.report_agent.generate_comprehensive_report(
-                title=state.title,
-                objective=state.objective,
-                research_data=research_data,
-                citation_data=citation_data,
-                location=state.location,
-                focus_areas=state.focus_areas
-            )
-            
-            state.final_report = report
-            
-            self._log_phase(state, "report", f"Report generated successfully: {report.report_id}")
-            if hasattr(report, 'quality_metrics'):
-                self._log_phase(state, "report", f"Report sections: {report.quality_metrics.get('total_sections', '0')}")
-            
-        except Exception as e:
-            error_msg = f"Report generation failed: {str(e)}"
-            state.errors.append(error_msg)
-            self._log_phase(state, "report", error_msg)
-        
-        return state
+            if hasattr(citation, 'title') and hasattr(citation, 'authors'):
+                authors = citation.authors[:50] + "..." if len(citation.authors) > 50 else citation.authors
+                title = citation.title[:60] + "..." if len(citation.title) > 60 else citation.title
+                year = getattr(citation, 'year', 'N/A')
+                return f"{authors} ({year}). {title}"
+            elif hasattr(citation, 'to_apa'):
+                apa = citation.to_apa()
+                return apa[:80] + "..." if len(apa) > 80 else apa
+            elif isinstance(citation, dict):
+                authors = citation.get('authors', 'Unknown')[:30]
+                title = citation.get('title', 'Unknown Title')[:40]
+                year = citation.get('year', 'N/A')
+                return f"{authors} ({year}). {title}"
+            else:
+                citation_str = str(citation)
+                return citation_str[:80] + "..." if len(citation_str) > 80 else citation_str
+        except:
+            return str(citation)[:80]
 
     def _quality_validation_phase(self, state: ResearchState) -> ResearchState:
         self._log_phase(state, "validation", "Starting quality validation phase")
         state.current_phase = "quality_validation"
         
+        print(f"\n{'='*80}")
+        print(f"QUALITY VALIDATION - Assessing research quality")
+        print(f"{'='*80}")
+        
         try:
+            validation_start = datetime.now()
             validation_results = self._validate_research_quality(state)
+            validation_time = (datetime.now() - validation_start).total_seconds()
             
             state.execution_log.append("=== QUALITY VALIDATION RESULTS ===")
             for metric, value in validation_results.items():
                 state.execution_log.append(f"{metric}: {value}")
+            
+            print(f"✓ Quality validation completed in {validation_time:.2f}s")
+            print(f"\n📊 Quality Assessment:")
+            print(f"{'-'*60}")
+            print(f"Overall Quality: {validation_results.get('overall_quality', 'unknown').upper()}")
+            print(f"Quality Score: {validation_results.get('quality_score', 0)}/100")
+            print(f"Plan Generated: {'Yes' if validation_results.get('plan_generated') else 'No'}")
+            print(f"Tasks Created: {validation_results.get('tasks_created', 0)}")
+            print(f"Research Successful: {'Yes' if validation_results.get('research_successful') else 'No'}")
+            print(f"Citations Found: {validation_results.get('citations_found', 0)}")
+            print(f"Sources Found: {validation_results.get('sources_found', 0)}")
+            print(f"Errors Encountered: {validation_results.get('errors_encountered', 0)}")
+            print(f"Phases Completed: {validation_results.get('execution_phases_completed', 0)}/4")
             
             self._log_phase(state, "validation", f"Quality validation completed: {validation_results.get('overall_quality', 'unknown')}")
             
@@ -549,6 +742,7 @@ class DeepResearchWorkflow:
             error_msg = f"Quality validation failed: {str(e)}"
             state.errors.append(error_msg)
             self._log_phase(state, "validation", error_msg)
+            print(f"✗ Quality validation failed: {str(e)}")
         
         return state
 
@@ -558,7 +752,6 @@ class DeepResearchWorkflow:
             "tasks_created": len(state.tasks) if state.tasks else 0,
             "research_successful": state.research_results.get('success', False) if state.research_results else False,
             "citations_found": state.citation_results.get('valid_count', 0) if state.citation_results else 0,
-            "report_generated": state.final_report is not None,
             "errors_encountered": len(state.errors),
             "execution_phases_completed": len([log for log in state.execution_log if "Starting" in log])
         }
@@ -570,19 +763,11 @@ class DeepResearchWorkflow:
                 "research_execution_time": state.research_results.get('total_execution_time', 0)
             })
         
-        if state.final_report and hasattr(state.final_report, 'quality_metrics'):
-            validation.update({
-                "report_completeness": state.final_report.quality_metrics.get('report_completeness', 'unknown'),
-                "report_sections": int(state.final_report.quality_metrics.get('total_sections', '0')),
-                "high_confidence_sections": int(state.final_report.quality_metrics.get('high_confidence_sections', '0'))
-            })
-        
         quality_score = 0
-        if validation["plan_generated"]: quality_score += 20
-        if validation["tasks_created"] >= 5: quality_score += 20
-        if validation["research_successful"]: quality_score += 25
+        if validation["plan_generated"]: quality_score += 25
+        if validation["tasks_created"] >= 5: quality_score += 25
+        if validation["research_successful"]: quality_score += 30
         if validation["citations_found"] >= 5: quality_score += 20
-        if validation["report_generated"]: quality_score += 15
         
         if validation["errors_encountered"] == 0:
             quality_score = min(100, quality_score)
@@ -673,14 +858,17 @@ class DeepResearchWorkflow:
                 "planning_results": {},
                 "research_results": {},
                 "citation_results": {},
-                "final_report": None,
-                "execution_summary": {},
+                "execution_summary": {"errors": [str(e)]},
                 "quality_validation": None
             }
 
     def _format_final_results(self, state: ResearchState) -> Dict[str, Any]:
+        agent_assignments = 0
+        if state.plan and hasattr(state.plan, 'agent_assignments'):
+            agent_assignments = len(state.plan.agent_assignments)
+        
         return {
-            "success": state.final_report is not None,
+            "success": len(state.errors) == 0,
             "title": state.title,
             "objective": state.objective,
             "location": state.location,
@@ -689,12 +877,11 @@ class DeepResearchWorkflow:
             "planning_results": {
                 "plan_generated": state.plan is not None,
                 "tasks_created": len(state.tasks) if state.tasks else 0,
-                "agent_assignments": len(state.plan.agent_assignments) if state.plan else 0
+                "agent_assignments": agent_assignments
             },
             
-            "research_results": state.research_results,
-            "citation_results": state.citation_results,
-            "final_report": state.final_report,
+            "research_results": state.research_results or {},
+            "citation_results": state.citation_results or {},
             
             "execution_summary": {
                 "phases_completed": len([log for log in state.execution_log if "Starting" in log]),
@@ -708,14 +895,16 @@ class DeepResearchWorkflow:
 
     def save_pdf_report(self, results: Dict[str, Any], custom_filename: str = None) -> str:
         try:
+            os.makedirs('Reports', exist_ok=True)
+            
             if custom_filename:
                 filename = custom_filename
                 if not filename.endswith('.pdf'):
                     filename += '.pdf'
             else:
-                safe_objective = results.get('objective', 'research').replace(' ', '_')[:30]
+                safe_objective = results.get('objective', 'research').replace(' ', '_').replace('/', '_')[:30]
                 timestamp = datetime.now().strftime('%Y%m%d_%H%M')
-                filename = f"Reports/agricultural_research_{safe_objective}_{timestamp}.pdf"
+                filename = f"agricultural_research_{safe_objective}_{timestamp}.pdf"
             
             if not filename.startswith('Reports/'):
                 filename = f"Reports/{filename}"
@@ -741,7 +930,7 @@ class DeepResearchWorkflow:
         
         exec_summary = results.get('execution_summary', {})
         print(f"\nEXECUTION SUMMARY")
-        print(f"Phases Completed: {exec_summary.get('phases_completed', 0)}/5")
+        print(f"Phases Completed: {exec_summary.get('phases_completed', 0)}/4")
         print(f"Errors Encountered: {exec_summary.get('errors_encountered', 0)}")
         
         planning = results.get('planning_results', {})
@@ -764,18 +953,17 @@ class DeepResearchWorkflow:
             print(f"Citation Success: {'Yes' if citations.get('success') else 'No'}")
             print(f"Valid Citations: {citations.get('valid_count', 0)}")
             print(f"Total Sources Examined: {citations.get('total_found', 0)}")
-        
-        if results.get('final_report'):
-            report = results['final_report']
-            print(f"\nREPORT GENERATION")
-            print(f"Report Generated: Yes")
-            print(f"Report ID: {report.report_id}")
             
-            if hasattr(report, 'quality_metrics'):
-                metrics = report.quality_metrics
-                print(f"Report Quality: {metrics.get('report_completeness', 'unknown').upper()}")
-                print(f"Sections: {metrics.get('total_sections', '0')}")
-                print(f"High Confidence: {metrics.get('high_confidence_sections', '0')}")
+            if citations.get('success') and citations.get('citations'):
+                print(f"\nCITATIONS FOUND:")
+                print("-" * 60)
+                for i, citation in enumerate(citations['citations'][:10], 1):
+                    citation_text = self._format_citation_display(citation, i)
+                    print(citation_text)
+                    print()
+                
+                if len(citations['citations']) > 10:
+                    print(f"... and {len(citations['citations']) - 10} more citations (see PDF report for complete list)")
         
         quality = results.get('quality_validation', {})
         if quality:
@@ -788,14 +976,40 @@ class DeepResearchWorkflow:
             for error in exec_summary['errors']:
                 print(f"- {error}")
         
-        if results.get('final_report'):
-            print(f"\nREPORT PREVIEW")
+        research_preview = research.get('combined_content', '') if research else ''
+        if research_preview:
+            print(f"\nRESEARCH PREVIEW")
             print("-" * 80)
-            formatted_report = self.report_agent.format_report_display(results['final_report'])
-            preview = formatted_report[:1000]
-            if len(formatted_report) > 1000:
-                preview += "\n\n... [Full report available in PDF] ..."
+            preview = research_preview[:1000]
+            if len(research_preview) > 1000:
+                preview += "\n\n... [Full research available in PDF] ..."
             print(preview)
+
+    def _format_citation_display(self, citation, index):
+        if hasattr(citation, 'title') and hasattr(citation, 'authors'):
+            year = getattr(citation, 'year', 'N/A')
+            citation_text = f"{index}. {citation.authors} ({year}). {citation.title}"
+            if hasattr(citation, 'journal') and citation.journal:
+                citation_text += f". {citation.journal}"
+            if hasattr(citation, 'url') and citation.url:
+                citation_text += f"\n   URL: {citation.url}"
+        elif hasattr(citation, 'to_apa'):
+            citation_text = f"{index}. {citation.to_apa()}"
+            if hasattr(citation, 'url') and citation.url:
+                citation_text += f"\n   URL: {citation.url}"
+        elif isinstance(citation, dict):
+            title = citation.get('title', 'Unknown Title')
+            authors = citation.get('authors', 'Unknown Authors')
+            year = citation.get('year', 'N/A')
+            citation_text = f"{index}. {authors} ({year}). {title}"
+            if citation.get('journal'):
+                citation_text += f". {citation['journal']}"
+            if citation.get('url'):
+                citation_text += f"\n   URL: {citation['url']}"
+        else:
+            citation_text = f"{index}. {str(citation)}"
+        
+        return citation_text
 
 
 def main():
@@ -826,7 +1040,7 @@ def main():
     print(f"\nGenerated Title: {generated_title}")
     
     print(f"\nStarting deep research workflow...")
-    print(f"This will involve: Planning -> Multi-threaded Research -> Citation Gathering -> Report Generation -> Quality Validation")
+    print(f"This will involve: Planning -> Research -> Citations -> Quality Validation")
     print("Please wait, this may take several minutes...\n")
     
     results = workflow.execute_research(
@@ -849,19 +1063,19 @@ def main():
             
             print(f"PDF report saved successfully!")
             print(f"Location: {filename}")
-            print(f"Report includes: Title page, Executive summary, Research findings, Citations, and Technical appendix")
+            print(f"Report includes: Research findings, Citations, Execution log, and Quality metrics")
             
         except Exception as e:
             print(f"Failed to save PDF: {str(e)}")
             print("Make sure ReportLab is installed: pip install reportlab")
     
-    json_backup = input(f"\nAlso save JSON backup for data analysis? (y/n): ").strip().lower()
+    json_backup = input(f"\nSave JSON backup for data analysis? (y/n): ").strip().lower()
     if json_backup == 'y':
         try:
-            import json
-            safe_objective = objective.replace(' ', '_')[:30]
+            safe_objective = objective.replace(' ', '_').replace('/', '_')[:30]
             json_filename = f"Reports/research_data_{safe_objective}_{datetime.now().strftime('%Y%m%d_%H%M')}.json"
             
+            os.makedirs('Reports', exist_ok=True)
             with open(json_filename, 'w', encoding='utf-8') as f:
                 json.dump(results, f, indent=2, default=str)
             print(f"JSON backup saved to: {json_filename}")
@@ -870,3 +1084,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    

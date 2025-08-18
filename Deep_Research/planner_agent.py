@@ -205,3 +205,13 @@ class AgriculturalPlanningAgent:
         print(f"\nAgent Assignments:")
         for agent, task_ids in plan.agent_assignments.items():
             print(f"  {agent}: {', '.join(task_ids)}")
+
+
+if __name__ == "__main__":
+    agent = AgriculturalPlanningAgent()
+    plan = agent.create_plan(
+        title="Soil Health Improvement in Wheat Farming",
+        objective="Develop strategies to enhance soil fertility and crop yield"
+    )
+    agent.display_plan(plan)
+            
