@@ -386,6 +386,25 @@ These scripts can be run to:
 
 Refer to the scripts in the `Evaluation/` folder for usage instructions and dataset requirements.
 
+## Evaluation Results
+
+### Agriculture-QA-Only Dataset
+
+| Model/Framework         | Hallucination Score | Rouge-L | BLEU  | Precision | F1 Score |
+|------------------------ |--------------------|---------|-------|-----------|----------|
+| LLaMA-3.3-70B-Versatile | 0.359              | 0.167   | 0.060 | 0.394     | 0.450    |
+| LLaMA-3.1-8B-Instant    | 0.407              | 0.168   | 0.075 | 0.517     | 0.403    |
+| Gemini-2.0-Flash        | 0.130              | 0.245   | 0.142 | 0.551     | 0.586    |
+| **PRAGATI**             | **0.080**          | **0.281** | **0.165** | **0.580** | **0.618** |
+
+### Bhashabench-Krishi Dataset (BharatGen)
+
+| Model/Framework         | Accuracy (%) |
+|------------------------ |-------------|
+| LLaMA-3.3-70B-Versatile | 38.34       |
+| Gemini-2.0-Flash        | 59.33       |
+| **PRAGATI**             | **78.51**   |
+
 ## Acknowledgments
 
 - Agricultural research institutions for datasets
