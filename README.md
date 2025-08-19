@@ -1,6 +1,5 @@
-
 <div align="center">
-  <img src="logo.png" alt="PRAGATI Logo" width="180" height="180" />
+  <img src="assets/logo.png" alt="PRAGATI Logo" width="180" height="180" />
   
   <h1>Agricultural AI Backend</h1>
   <h3>PRAGATI: Precision Retrieval & AI for Generative Agricultural Technology & Insights</h3>
@@ -9,6 +8,32 @@
 ---
 
 PRAGATI is an advanced multi-agent intelligence system designed for the agricultural sector. The platform leverages retrieval-augmented generation (RAG) and semantic search to deliver context-aware, data-driven insights grounded in verified agricultural knowledge bases.
+
+**The Agentic AI system operates in two modes: Tooling and RAG.**
+
+- **Tooling Mode:**  
+  In Tooling Mode, a network of fine-tuned agents delivers fast, accurate answers to domain-specific agricultural questions.  
+  A router agent directs queries to specialized agents for precise responses.  
+  Image-based queries are handled by agents for crop disease, pest prediction, and image analysis, while text-based queries are routed to agents for crops, weather, markets, finance, translation, and logistics.  
+  Together, they provide accurate, context-specific support for agricultural decision-making.
+
+  <div align="center">
+    <img src="assets/tooling_mode.png" alt="Tooling Mode Diagram" width="600"/>
+  </div>
+
+- **RAG Mode:**  
+  RAG Mode serves as a fallback, using retrieval-augmented generation to ensure reliability and comprehensive coverage.  
+  The system ensures reliability through a multi-step retrieval pipeline.  
+  Knowledge base documents are scored across semantic, domain-specific, and similarity dimensions, and only the most relevant are selected for deeper evaluation.  
+  Query complexity then dictates the optimal retrieval strategy — whether direct, combined, or enhanced with web search.  
+  A hybrid retrieval engine integrating FAISS and BM25, augmented with semantic chunking and re-ranking, further refines results to deliver accurate, context-aware, and trustworthy responses.  
+  Multi-threading across each knowledge base retrieval pipeline accelerates response generation and enriches contextual depth, diversity, and precision.
+
+  <div align="center">
+    <img src="assets/rag_mode.png" alt="RAG Mode Diagram" width="600"/>
+  </div>
+
+Together, these modes combine precision with scalability, enabling accurate, user-centered solutions for agricultural stakeholders.
 
 ## Key Features
 
