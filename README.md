@@ -1,4 +1,10 @@
-# PRAGATI - Agricultural AI Platform
+
+<p align="center">
+   <p>PRAGATI - Agricultural AI Platform Backend</p>
+   <img src="logo.png" alt="PRAGATI Logo" width="180"/>
+</p>
+
+# PRAGATI: Precision Retrieval & Generative AI for Agriculture
 
 **Precision Retrieval and AI for Generative Agriculture Technology & Insights**
 
@@ -162,23 +168,106 @@ uvicorn app:app --reload --host 0.0.0.0 --port 8000
 
 ```
 Capital_One_Launchpad/
-├── Agents/                     # AI Agent modules
-│   ├── Crop_Disease/          # Disease detection agent
-│   ├── Weather_forcast/       # Weather forecasting agent
-│   ├── Multi_Lingual/         # Translation agent
-│   └── ...                    # Other specialized agents
-├── Tools/                     # Utility tools and functions
-├── Models/                    # ML model files
-├── Dataset/                   # Training and reference datasets
-├── Notebooks/                 # Jupyter notebooks for analysis
-├── Deep_Research/             # Research and analysis tools
-├── RAG/                       # Retrieval-Augmented Generation
-├── uploads/                   # File upload directory
-├── app.py                     # Main FastAPI application
-├── workflow.py                # Core workflow logic
-├── requirements.txt           # Python dependencies
-├── Dockerfile                 # Docker configuration
-└── README.md                  # This file
+├── Agents/                       # AI Agent modules
+│   ├── Crop_Disease/             # Disease detection agent
+│   │   ├── agent.py
+│   │   ├── routers.py
+│   │   ├── schemas.py
+│   │   └── ...
+│   ├── Weather_forcast/          # Weather forecasting agent
+│   │   ├── agent.py
+│   │   ├── routers.py
+│   │   ├── schemas.py
+│   │   └── ...
+│   ├── Multi_Lingual/            # Multilingual/translation agent
+│   │   ├── agent.py
+│   │   ├── routers.py
+│   │   ├── schemas.py
+│   │   └── ...
+│   ├── Crop_Recommender/         # Crop recommendation agent
+│   ├── Market_Price/             # Market price agent
+│   ├── Credit_Policy_Market/     # Credit policy & market agent
+│   ├── Pest_prediction/          # Pest prediction agent
+│   ├── Risk_Management/          # Risk management agent
+│   ├── Image_Analysis/           # Image analysis agent
+│   ├── Location_Information/     # Location info agent
+│   ├── News/                     # News analysis agent
+│   ├── Web_Scrapping/            # Web scraping agent
+│   ├── fact_checker/             # Fact checking tools
+│   ├── Router.py                 # Agent router
+│   ├── Query_rewriter.py         # Query rewriting agent
+│   ├── answer_grader.py          # Answer grading agent
+│   ├── synthesizer_agent.py      # Synthesis agent
+│   └── ...
+├── Tools/                        # Utility tools and functions
+│   ├── crop_disease_detection.py
+│   ├── getCropRecommendation.py
+│   ├── getWeatherForecast.py
+│   ├── fetchMarketPrice.py
+│   ├── pest_prediction.py
+│   ├── risk_management.py
+│   ├── translation_tool.py
+│   ├── web_scrapper.py
+│   └── ...
+├── Models/                       # ML model files
+│   ├── Crop_Yield_Prediction/
+│   ├── Crop-Recommendation/
+│   ├── Fertilizer-Recommendation/
+│   ├── Pest_prediction/
+│   └── Weather_Forecasting/
+├── Dataset/                      # Training and reference datasets
+│   ├── crop_recommendation.csv
+│   ├── Crop_Yield_Data.csv
+│   ├── Fertilizer_recommendation.csv
+│   ├── Weather_data_combined.csv
+│   ├── pest/
+│   └── ...
+├── Notebooks/                    # Jupyter notebooks for analysis
+│   ├── Crop_Recommendation_Model.ipynb
+│   ├── Crop_Yield_Prediction.ipynb
+│   ├── Fertilizer_Recommendation_Model.ipynb
+│   ├── pest-prediction.ipynb
+│   └── Weather_Forecasting.ipynb
+├── Deep_Research/                # Research and analysis tools
+│   ├── citations.py
+│   ├── planner_agent.py
+│   ├── SubsearchAgent.py
+│   └── ...
+├── RAG/                          # Retrieval-Augmented Generation
+│   ├── adaptive_rag_class.py
+│   ├── adaptive_rag_main.py
+│   ├── document_scorer.py
+│   ├── eval.py
+│   ├── parallel_rag_main.py
+│   ├── ragas_evaluation.py
+│   ├── stategraph.py
+│   ├── workflow.py
+│   └── ...
+├── Evaluation/                   # Evaluation scripts and benchmarks
+│   ├── Agricultural QNA/
+│   │   ├── eval_agri_qna_gemini.py
+│   │   ├── eval_agri_qna_llama_3.1.py
+│   │   ├── eval_agri_qna_llama3.3.py
+│   │   ├── eval_agri_qna_pragati.py
+│   ├── BharatgenAI/
+│   │   ├── eval_gemini_bharatgen.py
+│   │   ├── eval_llama_bharatgen.py
+│   │   ├── eval_pragati_bharatgen.py
+│   │   └── verifier.py
+├── uploads/                      # File upload directory
+│   ├── crop_disease.jpg
+│   ├── captured-image.jpg
+│   └── ...
+├── Images/                       # Image assets (logo, crops, pests, etc.)
+│   ├── pragati_logo.png
+│   ├── Crop/
+│   └── Pest/
+├── app.py                        # Main FastAPI application
+├── workflow.py                   # Core workflow logic
+├── requirements.txt              # Python dependencies
+├── Dockerfile                    # Docker configuration
+├── docker-compose.yml            # Docker Compose configuration
+└── README.md                     # This file
 ```
 
 ## Monitoring & Health Checks
@@ -253,6 +342,30 @@ docker logs <container_name>
 ## License
 
 This project is licensed under the MIT License. See the LICENSE file for details.
+
+
+## 📊 Evaluation
+
+The `Evaluation/` directory contains scripts and tools for benchmarking and validating PRAGATI's performance across various agricultural QA and generative tasks. These scripts help assess the accuracy, robustness, and domain relevance of the platform's multi-agent and RAG-powered responses.
+
+### Evaluation Structure
+
+- **Agricultural QNA**: Automated evaluation scripts for agricultural question-answering using different LLMs and the PRAGATI system.
+   - `eval_agri_qna_gemini.py`: Evaluate agri-QA with Gemini.
+   - `eval_agri_qna_llama_3.1.py`, `eval_agri_qna_llama3.3.py`: Evaluate with Llama 3.1 and 3.3 models.
+   - `eval_agri_qna_pragati.py`: Benchmark PRAGATI's QA performance.
+
+- **BharatgenAI**: Scripts for evaluating generative and retrieval tasks on BharatgenAI datasets.
+   - `eval_gemini_bharatgen.py`, `eval_llama_bharatgen.py`: Evaluate BharatgenAI tasks with Gemini and Llama.
+   - `eval_pragati_bharatgen.py`: PRAGATI's performance on BharatgenAI tasks.
+   - `verifier.py`: Utility for verifying and scoring generated outputs.
+
+These scripts can be run to:
+- Compare PRAGATI's outputs with baseline LLMs
+- Score factuality, relevance, and completeness
+- Validate improvements in retrieval-augmented and multi-agent workflows
+
+Refer to the scripts in the `Evaluation/` folder for usage instructions and dataset requirements.
 
 ## Acknowledgments
 
