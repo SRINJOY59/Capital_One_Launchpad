@@ -339,11 +339,6 @@ docker logs <container_name>
 4. Test thoroughly
 5. Submit a pull request
 
-## License
-
-This project is licensed under the MIT License. See the LICENSE file for details.
-
-
 ## 📊 Evaluation
 
 The `Evaluation/` directory contains scripts and tools for benchmarking and validating PRAGATI's performance across various agricultural QA and generative tasks. These scripts help assess the accuracy, robustness, and domain relevance of the platform's multi-agent and RAG-powered responses.
@@ -377,4 +372,8 @@ Refer to the scripts in the `Evaluation/` folder for usage instructions and data
 ---
 
 **Developed for sustainable agriculture and AI innovation.**
+
+## License
+
+This project is licensed under the MIT License. See the LICENSE file for details.
 
