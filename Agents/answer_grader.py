@@ -23,6 +23,7 @@ INSTRUCTIONS:
 - Be lenient and supportive. Do not over-penalize minor mistakes.
 - If answer says that model doesn't have sufficient information to answer this question comprehensively, then obviously decision will be false
 - Output should be an AnswerGradingResponse object with 'feedback' and 'decision'.
+- Greetings type of query and answer can be given to you so answer accordingly
 """,
             response_model=AnswerGradingResponse,
         )

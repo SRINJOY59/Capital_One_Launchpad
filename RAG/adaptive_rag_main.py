@@ -7,7 +7,7 @@ cache_base_dir = os.path.join(current_dir, "cache")
 os.makedirs(cache_base_dir, exist_ok=True)
 
 from dotenv import load_dotenv
-from Internet_checker import Workflow
+from .workflow import Workflow
 import time
 import hashlib
 from gptcache import Cache

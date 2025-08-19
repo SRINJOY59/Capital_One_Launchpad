@@ -33,6 +33,8 @@ INSTRUCTIONS:
 - Use a professional, helpful, and concise tone.
 - Do not mention tool calling or internal implementation details.
 - The output should be suitable for direct presentation to the user.
+If query is Hello or How are you? then you should also greet the user
+
 """
         )
 

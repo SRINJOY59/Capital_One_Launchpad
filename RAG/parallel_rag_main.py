@@ -19,8 +19,15 @@ from .workflow import Workflow
 from agno.agent import Agent
 from agno.models.google import Gemini
 from .document_scorer import FastQuerySummaryScorer
+from pydantic import BaseModel  
+
+
 
 load_dotenv()
+
+class GeneralQuestion(BaseModel):
+    agriculture_related : bool
+    generation : str
 
 class ParallelRAGSystem:
     def __init__(self, model="gemini-2.0-flash", k=3):
@@ -30,6 +37,26 @@ class ParallelRAGSystem:
         self.data_dir = Path(current_dir) / "Data"
         self.cache_base = Path(cache_base_dir)
         self.document_scorer = FastQuerySummaryScorer()
+        
+        self.query_router = Agent(
+            model=Gemini(id="gemini-2.0-flash"),
+            show_tool_calls=False,
+            markdown=True,
+            response_model=GeneralQuestion,
+            instructions="""You are a query classification agent. Your task is to determine if a user's question is related to agriculture and provide appropriate responses.
+
+**Classification Rules:**
+- Set agriculture_related to True if the question is about: farming, crops, soil, livestock, agricultural practices, plant diseases, fertilizers, irrigation, agricultural technology, farm management, agricultural economics, or any farming-related topic
+- Set agriculture_related to False for all other topics
+
+**Response Generation:**
+- If agriculture_related is True: Set generation to "ROUTE_TO_RAG"
+- If agriculture_related is False:
+  - For greetings/casual conversation: Provide a friendly response and mention you specialize in agricultural topics
+  - For non-agricultural questions: Politely explain that you can only help with agriculture-related questions and suggest they ask about farming topics instead
+
+Always be helpful and polite in your responses."""
+        )
         
         self.synthesizer = Agent(
             model=Gemini(id="gemini-2.0-flash"),
@@ -92,7 +119,6 @@ Respond as a trusted advisor who understands both the science and the practical 
                 for ext in supported_extensions:
                     for file_path in location.glob(f"*{ext}"):
                         if file_path.is_file() and file_path not in data_files:
-                            # Include chunk files as they are processed documents
                             data_files.append(file_path)
         
         return data_files
@@ -246,7 +272,6 @@ Respond as a trusted advisor who understands both the science and the practical 
         synthesis_prompt.append(f'Drawing from this agricultural information and your professional expertise, provide a thorough answer to: "{question}"')
         synthesis_prompt.append("Present your response as if you are sharing your own knowledge and experience, without referencing any external sources or documents. Focus on practical guidance and actionable recommendations.")
 
-        # Join all parts into a single string
         synthesis_prompt_str = "\n".join(synthesis_prompt)
 
         print("Synthesizing agricultural insights...")
@@ -260,6 +285,24 @@ Respond as a trusted advisor who understands both the science and the practical 
         print("=" * 80)
         
         start_time = time.time()
+        
+        router_result = self.query_router.run(question).content
+        
+        if not router_result.agriculture_related:
+            end_time = time.time()
+            total_time = end_time - start_time
+            return {
+                "question": question,
+                "total_files_available": 0,
+                "files_selected": 0,
+                "total_files_processed": 0,
+                "successful_workflows": 0,
+                "failed_workflows": 0,
+                "individual_results": [],
+                "synthesized_answer": router_result.generation,
+                "total_processing_time": total_time,
+                "average_time_per_file": 0
+            }
         
         all_data_files = self.get_data_files()
         if not all_data_files:
@@ -346,6 +389,13 @@ def main():
     print("FINAL RESULTS")
     print("="*80)
     print(f"Question: {result['question']}")
+    
+    if result.get('total_files_available', 0) == 0 and result.get('files_selected', 0) == 0:
+        print("Non-agriculture query - Direct response:")
+        print(result['synthesized_answer'])
+        print(f"Total Time: {result['total_processing_time']:.2f}s")
+        return
+    
     print(f"Files Available: {result['total_files_available']}")
     print(f"Files Selected: {result['files_selected']}")
     print(f"Files Processed: {result['total_files_processed']}")
@@ -368,4 +418,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

@@ -30,7 +30,7 @@ def load_crop_recommendation_models():
 
     return models
 
-def crop_recommendation_inference(N, P, K, temperature, humidity, ph, rainfall, model_type='stacked'):
+def crop_recommendation_inference(N, P, K, temperature, humidity, ph, rainfall, model_type='random_forest'):
     """
     Perform crop recommendation inference and return top 5 recommendations in JSON format
     
