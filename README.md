@@ -1,8 +1,7 @@
 <div align="center">
   <img src="assets/logo.png" alt="PRAGATI Logo" width="180" height="180" />
   
-  <h1>Agricultural AI Backend</h1>
-  <h3>PRAGATI: Precision Retrieval & AI for Generative Agricultural Technology & Insights</h3>
+  <h1>PRAGATI: Precision Retrieval & AI for Generative Agricultural Technology & Insights</h1>
 </div>
 
 ---
