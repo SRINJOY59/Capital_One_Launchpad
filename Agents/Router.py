@@ -174,6 +174,16 @@ Output:
     "No image detected. FertilizerRecommenderAgent is selected to recommend fertilizers for wheat in Punjab based on soil test results."
   ]
 }
+
+Example 12 : 
+Query : "How to prevent fungal diseases in tomato crops?"
+Output:
+{
+  "agents": ["CropDiseaseDetectionAgent"],
+  "justifications": [
+    "No image detected. CropDiseaseDetectionAgent is selected to provide information on preventing fungal diseases in tomato crops."
+  ]
+}
 CRITICAL REMINDERS:
 - If ANY image is mentioned (file, photo, picture, visual content), route ONLY to image agents
 - Never combine image agents with non-image agents

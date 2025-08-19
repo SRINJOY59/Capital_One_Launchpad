@@ -143,7 +143,7 @@ def prepare_crop_yield_input(state_name, district_name, crop_year, season, crop,
     return input_array
 
 def crop_yield_inference(state_name, district_name, crop_year, season, crop, 
-                        temperature, humidity, soil_moisture, area, model_type='stacked_2'):
+                        temperature, humidity, soil_moisture, area, model_type='random_forest'):
     """
     Perform crop yield prediction inference and return results in JSON format
     

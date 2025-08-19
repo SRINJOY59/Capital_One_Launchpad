@@ -19,7 +19,7 @@ from Agents.Crop_Disease.agent import CropDiseaseAgent
 from Agents.fact_checker.fscorer import LikertScorer
 from Agents.Image_Analysis.agent import ImageAgent
 from Agents.Market_Price.agent import MarketPriceAgent
-from Agents.Multi_Lingual.agent import MultiLanguageTranslator
+from Agents.Multi_Lingual.agent import MultiLingualAgent
 from Agents.Pest_prediction.agent import PestPredictionAgent
 from Agents.Risk_Management.agent import AgriculturalRiskAnalysisAgent
 from Agents.Web_Scrapping.agent import AgriculturalWebScrappingAgent
@@ -53,7 +53,7 @@ crop_disease_agent = CropDiseaseAgent()
 fact_checker_agent = LikertScorer()
 image_analysis_agent = ImageAgent()
 market_price_agent = MarketPriceAgent()
-multi_language_translator_agent = MultiLanguageTranslator()
+multi_language_translator_agent = MultiLingualAgent()
 pest_prediction_agent = PestPredictionAgent()
 risk_management_agent = AgriculturalRiskAnalysisAgent()
 web_scraping_agent = AgriculturalWebScrappingAgent()
@@ -257,36 +257,12 @@ def mode_decision_edge(state: MainWorkflowState):
     if is_answer_complete:
         return "end"
     
-    if has_switched_mode:
-        return "query_rewrite"
-    
     if current_mode == "tooling":
-        return "switch_to_rag"
+        return "fallback"
     elif current_mode == "rag":
         return "switch_to_tooling"
     
-    return "query_rewrite"
-
-def switch_to_rag_node(state: MainWorkflowState):
-    rag_response = run_adaptive_rag(state["query"])
-    documents = []
-    extractions = ""
-    if isinstance(rag_response, dict):
-        documents = rag_response.get("documents", [])
-        extractions = rag_response.get("extractions", "")
-        generation = rag_response.get("generation", "")
-    else:
-        generation = rag_response
-    
-    return {
-        "rag_response": rag_response,
-        "synthesized_result": rag_response,
-        "documents": documents,
-        "extractions": extractions,
-        "generation": generation,
-        "current_mode": "rag",
-        "has_switched_mode": True
-    }
+    return "fallback"
 
 def switch_to_tooling_node(state: MainWorkflowState):
     router_result = run_router_agent(state["query"], state.get("image_path"))
@@ -296,12 +272,11 @@ def switch_to_tooling_node(state: MainWorkflowState):
         "has_switched_mode": True
     }
 
-def query_rewrite_node(state: MainWorkflowState):
-    rewritten_query = query_rewriter_agent.rewrite(state["query"], state["synthesized_result"])
+def fallback_node(state: MainWorkflowState):
+    fallback_response = multi_language_translator_agent.respond(f"Provide a general answer for: {state['query']}")
+    
     return {
-        "rewritten_query": rewritten_query,
-        "query": rewritten_query,
-        "has_switched_mode": False
+        "synthesized_result": fallback_response
     }
 
 def start_routing_edge(state: MainWorkflowState):
@@ -322,9 +297,8 @@ def build_hybrid_workflow_graph():
     graph.add_node("agent_calls", agent_calls_node)
     graph.add_node("synthesize_tooling", synthesize_tooling_node)
     graph.add_node("grading", grading_node)
-    graph.add_node("switch_to_rag", switch_to_rag_node)
     graph.add_node("switch_to_tooling", switch_to_tooling_node)
-    graph.add_node("query_rewrite", query_rewrite_node)
+    graph.add_node("fallback", fallback_node)
     
     graph.add_conditional_edges(START, start_routing_edge, {"rag": "rag", "router": "router"})
     
@@ -338,15 +312,13 @@ def build_hybrid_workflow_graph():
         mode_decision_edge, 
         {
             "end": END, 
-            "switch_to_rag": "switch_to_rag",
             "switch_to_tooling": "switch_to_tooling",
-            "query_rewrite": "query_rewrite"
+            "fallback": "fallback"
         }
     )
     
-    graph.add_edge("switch_to_rag", "grading")
     graph.add_edge("switch_to_tooling", "agent_calls")
-    graph.add_edge("query_rewrite", "router")
+    graph.add_edge("fallback", END)
     
     return graph
 
@@ -404,6 +376,7 @@ def run_workflow(query: str, mode: str = "rag", image_path: str = None) -> Dict[
 if __name__ == "__main__":
     import time
     questions = [
+        "Hello how are you?",
         "Estimate crop yield for wheat in Punjab in winter of 2025",
         "How can farmers manage pest outbreaks in cotton fields?",
         "What is the market price trend for wheat in India?",
