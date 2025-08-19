@@ -6,9 +6,7 @@
   <h3>PRAGATI: Precision Retrieval & AI for Generative Agricultural Technology & Insights</h3>
 </div>
 
-# PRAGATI: Precision Retrieval & Generative AI for Agriculture
-
-**Precision Retrieval and AI for Generative Agriculture Technology & Insights**
+---
 
 PRAGATI is an advanced multi-agent intelligence system designed for the agricultural sector. The platform leverages retrieval-augmented generation (RAG) and semantic search to deliver context-aware, data-driven insights grounded in verified agricultural knowledge bases.
 
