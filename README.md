@@ -6,7 +6,10 @@
 
 ---
 
-PRAGATI is an advanced multi-agent intelligence system designed for the agricultural sector. The platform leverages retrieval-augmented generation (RAG) and semantic search to deliver context-aware, data-driven insights grounded in verified agricultural knowledge bases.
+PRAGATI is an advanced multi-agent intelligence system designed for the agricultural sector.  
+The platform leverages retrieval-augmented generation (RAG) and semantic search to deliver context-aware, data-driven insights grounded in verified agricultural knowledge bases.
+
+**Developed for the Capital One Launchpad Hackathon.**
 
 **The Agentic AI system operates in two modes: Tooling and RAG.**
 
