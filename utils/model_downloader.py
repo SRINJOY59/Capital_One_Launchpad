@@ -29,7 +29,7 @@ def download_model_flat(repo_id: str, save_dir: str):
 
 if __name__ == "__main__":
     base_repo = "Qwen/Qwen1.5-1.8B"
-    base_dir = "../models/Qwen1.5-Base"
+    base_dir = "../models/Qwen_1.5_1.8B"
     download_model_flat(base_repo, base_dir)
 
     adapter_repo = "anushree0107/agri-fine-tunes-qwen"

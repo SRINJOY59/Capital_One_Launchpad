@@ -37,6 +37,37 @@ The platform leverages retrieval-augmented generation (RAG) and semantic search 
 
 Together, these modes combine precision with scalability, enabling accurate, user-centered solutions for agricultural stakeholders.
 
+---
+
+### Offline Query Handling
+
+For offline query handling, PRAGATI supports local inference using a fine-tuned model:
+
+- **Setup:**  
+  Run the `model_downloader.py` script inside utils directory to download and save the model locally.
+- **Model Details:**  
+  The model is fine-tuned specifically on an agricultural QnA dataset from Hugging Face, ensuring domain relevance and accuracy.
+- **Usage:**  
+  In offline scenarios (no internet connectivity), this local model is automatically called to generate answers.
+- **Future Scope:**  
+  This approach enables seamless integration into mobile applications, allowing robust agricultural AI support even without internet access.
+- **Note:**  
+  Due to space limitations, the large model file is not pushed directly to GitHub. Please use the provided script to download it as needed.
+
+---
+
+### Hallucination Removal
+
+To ensure factual accuracy and relevance in responses, PRAGATI employs a two-step hallucination removal process:
+
+- **Fact Checker:**  
+  Detects and flags hallucinated or incorrect information in generated answers.
+- **Answer Grader:**  
+  Evaluates the relevance and completeness of answers, ensuring they address the user's query appropriately.
+
+This dual-agent approach significantly reduces hallucinations and improves answer quality.  
+Our RAGAS evaluation (see results below) demonstrates the effectiveness of this strategy in minimizing hallucinations and maximizing relevance.
+
 ## Key Features
 
 - Multi-agent architecture with domain-specialized agents
