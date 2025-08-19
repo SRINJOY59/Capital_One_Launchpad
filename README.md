@@ -13,7 +13,7 @@ PRAGATI is an advanced multi-agent intelligence system designed for the agricult
 ## Key Features
 
 - Multi-agent architecture with domain-specialized agents
-- Retrieval-augmented generation for accurate, context-sensitive responses
+- Retrieval-Augmented Generation (RAG) for accurate, context-sensitive responses, powered by a multi-threaded retrieval pipeline that simultaneously processes multiple knowledge sources
 - Multi-lingual and multi-modal support (text, image, voice)
 - Deep research pipelines for comprehensive analysis
 - Human-in-the-loop validation for reliability
@@ -96,7 +96,6 @@ docker run -p 8000:8000 \
 - Risk Management: `/api/v1/agent/risk-management`
 - News Analysis: `/api/v1/agent/agri-news`
 - Credit Policy & Market: `/api/v1/agent/creditpolicy`
-- Deep Research: `/api/v1/agent/deep-research`
 
 ### Utilities
 
@@ -314,7 +313,7 @@ docker logs <container_name>
 
 ### RAG-Powered Intelligence
 
-- Semantic search for advanced retrieval from agricultural knowledge bases
+- Semantic search for advanced multi threaded retrieval from agricultural knowledge bases
 - Query complexity assessment for optimized retrieval and generation
 - Domain-specific knowledge grounded in verified agricultural data
 
@@ -339,7 +338,7 @@ docker logs <container_name>
 4. Test thoroughly
 5. Submit a pull request
 
-## 📊 Evaluation
+##  Evaluation
 
 The `Evaluation/` directory contains scripts and tools for benchmarking and validating PRAGATI's performance across various agricultural QA and generative tasks. These scripts help assess the accuracy, robustness, and domain relevance of the platform's multi-agent and RAG-powered responses.
 
