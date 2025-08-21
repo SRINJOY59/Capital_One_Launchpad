@@ -123,7 +123,7 @@ GOOGLE_MAPS_API_KEY=your_google_maps_api_key_here
 docker build -t pragati .
 
 # Run the container
-docker run -p 8000:8000 \
+docker run -p 8080:8080 \
    --env-file .env \
    -e GOOGLE_APPLICATION_CREDENTIALS=/app/google-creds.json \
    -v $(pwd)/google-creds.json:/app/google-creds.json \
@@ -132,9 +132,9 @@ docker run -p 8000:8000 \
 
 ### Access the Application
 
-- API Documentation: http://localhost:8000/docs
-- Health Check: http://localhost:8000/health
-- Root Endpoint: http://localhost:8000/
+- API Documentation: http://localhost:8080/docs
+- Health Check: http://localhost:8080/health
+- Root Endpoint: http://localhost:8080/
 
 ## API Endpoints
 
@@ -166,13 +166,13 @@ docker run -p 8000:8000 \
 ### Health Check
 
 ```bash
-curl http://localhost:8000/health
+curl http://localhost:8080/health
 ```
 
 ### Crop Recommendation Example
 
 ```bash
-curl -X POST "http://localhost:8000/api/v1/crop-recommendation" \
+curl -X POST "http://localhost:8080/api/v1/crop-recommendation" \
 -H "Content-Type: application/json" \
 -d '{
   "N": 90,
@@ -189,7 +189,7 @@ curl -X POST "http://localhost:8000/api/v1/crop-recommendation" \
 ### Disease Detection Example
 
 ```bash
-curl -X POST "http://localhost:8000/api/v1/crop-disease/detect" \
+curl -X POST "http://localhost:8080/api/v1/crop-disease/detect" \
 -H "Content-Type: multipart/form-data" \
 -F "file=@path/to/your/crop_image.jpg"
 ```
@@ -218,7 +218,7 @@ cp .env.example .env
 # Edit .env with your API keys
 
 # Run the application
-uvicorn app:app --reload --host 0.0.0.0 --port 8000
+uvicorn app:app --reload --host 0.0.0.0 --port 8080
 ```
 
 ## Project Structure
@@ -339,10 +339,10 @@ The application includes built-in monitoring:
 
 ### Common Issues
 
-1. Port 8000 already in use
+1. Port 8080 already in use
 
    ```bash
-   lsof -i :8000
+   lsof -i :8080
    kill -9 <PID>
    ```
 
@@ -396,23 +396,25 @@ docker logs <container_name>
 4. Test thoroughly
 5. Submit a pull request
 
-##  Evaluation
+## Evaluation
 
 The `Evaluation/` directory contains scripts and tools for benchmarking and validating PRAGATI's performance across various agricultural QA and generative tasks. These scripts help assess the accuracy, robustness, and domain relevance of the platform's multi-agent and RAG-powered responses.
 
 ### Evaluation Structure
 
 - **Agricultural QNA**: Automated evaluation scripts for agricultural question-answering using different LLMs and the PRAGATI system.
-   - `eval_agri_qna_gemini.py`: Evaluate agri-QA with Gemini.
-   - `eval_agri_qna_llama_3.1.py`, `eval_agri_qna_llama3.3.py`: Evaluate with Llama 3.1 and 3.3 models.
-   - `eval_agri_qna_pragati.py`: Benchmark PRAGATI's QA performance.
+
+  - `eval_agri_qna_gemini.py`: Evaluate agri-QA with Gemini.
+  - `eval_agri_qna_llama_3.1.py`, `eval_agri_qna_llama3.3.py`: Evaluate with Llama 3.1 and 3.3 models.
+  - `eval_agri_qna_pragati.py`: Benchmark PRAGATI's QA performance.
 
 - **BharatgenAI**: Scripts for evaluating generative and retrieval tasks on BharatgenAI datasets.
-   - `eval_gemini_bharatgen.py`, `eval_llama_bharatgen.py`: Evaluate BharatgenAI tasks with Gemini and Llama.
-   - `eval_pragati_bharatgen.py`: PRAGATI's performance on BharatgenAI tasks.
-   - `verifier.py`: Utility for verifying and scoring generated outputs.
+  - `eval_gemini_bharatgen.py`, `eval_llama_bharatgen.py`: Evaluate BharatgenAI tasks with Gemini and Llama.
+  - `eval_pragati_bharatgen.py`: PRAGATI's performance on BharatgenAI tasks.
+  - `verifier.py`: Utility for verifying and scoring generated outputs.
 
 These scripts can be run to:
+
 - Compare PRAGATI's outputs with baseline LLMs
 - Score factuality, relevance, and completeness
 - Validate improvements in retrieval-augmented and multi-agent workflows
@@ -423,20 +425,20 @@ Refer to the scripts in the `Evaluation/` folder for usage instructions and data
 
 ### Agriculture-QA-Only Dataset
 
-| Model/Framework         | Hallucination Score | Rouge-L | BLEU  | Precision | F1 Score |
-|------------------------ |--------------------|---------|-------|-----------|----------|
-| LLaMA-3.3-70B-Versatile | 0.359              | 0.167   | 0.060 | 0.394     | 0.450    |
-| LLaMA-3.1-8B-Instant    | 0.407              | 0.168   | 0.075 | 0.517     | 0.403    |
-| Gemini-2.0-Flash        | 0.130              | 0.245   | 0.142 | 0.551     | 0.586    |
-| **PRAGATI**             | **0.080**          | **0.281** | **0.165** | **0.580** | **0.618** |
+| Model/Framework         | Hallucination Score | Rouge-L   | BLEU      | Precision | F1 Score  |
+| ----------------------- | ------------------- | --------- | --------- | --------- | --------- |
+| LLaMA-3.3-70B-Versatile | 0.359               | 0.167     | 0.060     | 0.394     | 0.450     |
+| LLaMA-3.1-8B-Instant    | 0.407               | 0.168     | 0.075     | 0.517     | 0.403     |
+| Gemini-2.0-Flash        | 0.130               | 0.245     | 0.142     | 0.551     | 0.586     |
+| **PRAGATI**             | **0.080**           | **0.281** | **0.165** | **0.580** | **0.618** |
 
 ### Bhashabench-Krishi Dataset (BharatGen)
 
 | Model/Framework         | Accuracy (%) |
-|------------------------ |-------------|
-| LLaMA-3.3-70B-Versatile | 38.34       |
-| Gemini-2.0-Flash        | 59.33       |
-| **PRAGATI**             | **78.51**   |
+| ----------------------- | ------------ |
+| LLaMA-3.3-70B-Versatile | 38.34        |
+| Gemini-2.0-Flash        | 59.33        |
+| **PRAGATI**             | **78.51**    |
 
 ## Acknowledgments
 
@@ -452,4 +454,3 @@ Refer to the scripts in the `Evaluation/` folder for usage instructions and data
 ## License
 
 This project is licensed under the MIT License. See the LICENSE file for details.
-
