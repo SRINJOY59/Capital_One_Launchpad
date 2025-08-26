@@ -25,6 +25,7 @@ from Agents.Risk_Management.agent import AgriculturalRiskAnalysisAgent
 from Agents.Web_Scrapping.agent import AgriculturalWebScrappingAgent
 from Agents.Crop_Yield.agent import CropYieldAssistant
 from Agents.Query_rewriter import QueryRewriterAgent
+from Agents.Chart_Agent.agent import AgriculturalChartAgent
 from Agents.Fertilizer_Recommender.agent import FertilizerRecommendationAgent
 from utils.Internet_checker import InternetChecker
 from utils.hf_model import HFModel
@@ -37,7 +38,6 @@ hf_model = None
 if not internet_checker.is_connected():
     print("Offline mode detected. Using HF Model for inference.")
     hf_model = HFModel(base_model_dir, adapter_dir)
-
 else: 
     print("Online mode detected")
 
@@ -45,6 +45,7 @@ crop_recommender_agent = CropRecommenderAgent()
 weather_forecast_agent = WeatherForecastAgent()
 location_agri_assistant = LocationAgriAssistant()
 news_agent = NewsAgent()
+chart_agent = AgriculturalChartAgent()
 crop_yield_assistant = CropYieldAssistant()
 credit_policy_market_agent = CreditPolicyMarketAgent()
 answer_grader_agent = AnswerGraderAgent()
@@ -78,6 +79,8 @@ class MainWorkflowState(TypedDict):
     documents: List[str]
     has_switched_mode: bool
     is_image_query: bool
+    chart_path: str
+    chart_extra_message: str
 
 def run_adaptive_rag(query: str) -> str:
     rag_system = ParallelRAGSystem(model="gemini-2.0-flash", k=3)
@@ -135,12 +138,33 @@ def call_agent(agent_name: str, query: str, image_path: str = None) -> Any:
         return crop_yield_assistant.respond(query)
     elif agent_name == "FertilizerRecommenderAgent":
         return fertilizer_recommender_agent.recommend_fertilizer(query)
+    elif agent_name == "ChartAgent":
+        return chart_agent.generate_response(query)
     else:
         return f"No implementation for agent: {agent_name}"
 
 def call_agent_simple(agent_name: str, query: str, image_path: str = None) -> Dict[str, Any]:
     try:
         agent_response = call_agent(agent_name, query, image_path)
+        
+        if agent_name == "ChartAgent" and agent_response:
+            chart_path = ""
+            extra_message = ""
+            
+            if hasattr(agent_response, 'image_path') and agent_response.image_path:
+                chart_path = agent_response.image_path
+            
+            if hasattr(agent_response, 'extra_message') and agent_response.extra_message:
+                extra_message = agent_response.extra_message
+            
+            response_text = f"{extra_message}\n\nChart generated at: {chart_path}" if chart_path else extra_message
+            
+            return {
+                "agent_name": agent_name,
+                "response": response_text,
+                "chart_path": chart_path,
+                "extra_message": extra_message
+            }
         
         return {
             "agent_name": agent_name,
@@ -200,6 +224,8 @@ def router_node(state: MainWorkflowState):
 
 def agent_calls_node(state: MainWorkflowState):
     agent_responses = {}
+    chart_path = ""
+    chart_extra_message = ""
     agents = state["router_result"].get("agents", [])
     
     with ThreadPoolExecutor() as executor:
@@ -215,12 +241,18 @@ def agent_calls_node(state: MainWorkflowState):
                 agent_responses[agent_name] = result["response"]
                 print(f"Agent {agent_name} Response: {result['response']}")
                 
+                if agent_name == "ChartAgent":
+                    chart_path = result.get("chart_path", "")
+                    chart_extra_message = result.get("extra_message", "")
+                
             except Exception as e:
                 agent_responses[agent_name] = f"Error: {str(e)}"
                 print(f"Agent {agent_name} Error: {str(e)}")
     
     return {
-        "agent_responses": agent_responses
+        "agent_responses": agent_responses,
+        "chart_path": chart_path,
+        "chart_extra_message": chart_extra_message
     }
 
 def synthesize_tooling_node(state: MainWorkflowState):
@@ -230,6 +262,9 @@ def synthesize_tooling_node(state: MainWorkflowState):
         all_responses.append(response)
     
     synthesized_result = synthesizer_agent.synthesize(all_responses)
+    
+    if state.get("chart_path") and state.get("chart_extra_message"):
+        synthesized_result = f"{state['chart_extra_message']}\n\n{synthesized_result}\n\nChart available at: {state['chart_path']}"
     
     return {
         "synthesized_result": synthesized_result
@@ -334,7 +369,9 @@ def run_workflow(query: str, mode: str = "rag", image_path: str = None) -> Dict[
             "is_answer_complete": True,
             "final_mode": "offline",
             "switched_modes": False,
-            "is_image_query": image_path is not None
+            "is_image_query": image_path is not None,
+            "chart_path": "",
+            "chart_extra_message": ""
         }
     
     is_image_query = image_path is not None
@@ -356,7 +393,9 @@ def run_workflow(query: str, mode: str = "rag", image_path: str = None) -> Dict[
         extractions="",
         documents=[],
         has_switched_mode=False,
-        is_image_query=is_image_query
+        is_image_query=is_image_query,
+        chart_path="",
+        chart_extra_message=""
     )
     
     if mode.lower() not in ["rag", "tooling"]:
@@ -370,17 +409,21 @@ def run_workflow(query: str, mode: str = "rag", image_path: str = None) -> Dict[
         "is_answer_complete": final_state.get("answer_grade", {}).get("is_good_answer", False),
         "final_mode": final_state.get("current_mode", mode),
         "switched_modes": final_state.get("has_switched_mode", False),
-        "is_image_query": final_state.get("is_image_query", False)
+        "is_image_query": final_state.get("is_image_query", False),
+        "chart_path": final_state.get("chart_path", ""),
+        "chart_extra_message": final_state.get("chart_extra_message", "")
     }
 
 if __name__ == "__main__":
     import time
     questions = [
-        "Hello how are you?",
-        "Estimate crop yield for wheat in Punjab in winter of 2025",
-        "How can farmers manage pest outbreaks in cotton fields?",
-        "What is the market price trend for wheat in India?",
-        "How to prevent fungal diseases in tomato crops?",
+        # "Hello how are you?",
+        # "Estimate crop yield for wheat in Punjab in winter of 2025",
+        # "How can farmers manage pest outbreaks in cotton fields?",
+        # "What is the market price trend for wheat in India?",
+        # "How to prevent fungal diseases in tomato crops?",
+        "Create a chart showing corn price trends over the last year",
+        "Generate a graph for wheat yield predictions"
     ]
     
     image_queries = [
@@ -419,6 +462,12 @@ if __name__ == "__main__":
         print(f"  - Switched Modes: {result['switched_modes']}")
         print(f"  - Is Image Query: {result['is_image_query']}")
         print(f"  - Processing Time: {end_time - start_time:.2f}s")
+        
+        if result.get("chart_path"):
+            print(f"  - Chart Generated: {result['chart_path']}")
+        
+        if result.get("chart_extra_message"):
+            print(f"  - Chart Insights: {result['chart_extra_message']}")
         
         if result['answer_quality_grade'].get('reasoning'):
             print(f"  - Quality Grade Reasoning: {result['answer_quality_grade']['reasoning']}")

@@ -7,6 +7,8 @@ from agno.tools.yfinance import YFinanceTools
 from dotenv import load_dotenv
 from datetime import datetime
 from pydantic import BaseModel
+import matplotlib
+matplotlib.use('Agg')
 
 load_dotenv()
 
@@ -69,61 +71,55 @@ RESPONSE FORMAT:
 
 REQUIRED CODE PATTERN WITH PROPER IMPORTS:
 ```python
-# ALWAYS START WITH ALL IMPORTS
 import os
 import pandas as pd
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import yfinance as yf
 from datetime import datetime
 
-# Setup directories
-base_dir = "../../"
-charts_dir = os.path.join(base_dir, "Generated_charts")
+# Correct path resolution for project structure
+import sys
+import inspect
+current_file = inspect.getfile(inspect.currentframe())
+agents_dir = os.path.dirname(current_file)
+project_root = os.path.dirname(os.path.dirname(agents_dir))
+charts_dir = os.path.join(project_root, "Generated_charts")
 os.makedirs(charts_dir, exist_ok=True)
 
-# STEP 1: FETCH REAL DATA using YFinance
 try:
-    ticker_data = yf.download('ZW=F', period='1y')  # Example for wheat
+    ticker_data = yf.download('ZW=F', period='1y')
     real_prices = ticker_data['Close']
     real_dates = ticker_data.index
-except Exception as e:
-    print(f"Error fetching data: {e}")
-    # Only use fallback if real data fails
     
-# STEP 2: CREATE VISUALIZATION WITH REAL DATA
-plt.figure(figsize=(12, 6))
-plt.plot(real_dates, real_prices, linewidth=2)
-plt.title("Real Wheat Futures Prices - Live Data")
-plt.xlabel("Date")
-plt.ylabel("Price (USD)")
-
-# STEP 3: SAVE CHART AND RETURN PATH
-timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-chart_path = os.path.join(charts_dir, f"real_data_chart_{timestamp}.png")
-plt.savefig(chart_path, dpi=300, bbox_inches='tight')
-plt.show()
-print(f"Real data chart saved: {chart_path}")
+    plt.figure(figsize=(12, 6))
+    plt.plot(real_dates, real_prices, linewidth=2)
+    plt.title("Real Wheat Futures Prices - Live Data")
+    plt.xlabel("Date")
+    plt.ylabel("Price (USD)")
+    plt.grid(True, alpha=0.3)
+    
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    chart_path = os.path.join(charts_dir, f"real_data_chart_{timestamp}.png")
+    plt.savefig(chart_path, dpi=300, bbox_inches='tight')
+    plt.close()
+    print(f"Chart saved: {chart_path}")
+    
+except Exception as e:
+    print(f"Error: {e}")
 ```
 
 CRITICAL CODING RULES:
-- ALL imports must be at the very top of the code
-- Use try-except blocks for data fetching
-- Test imports: import pandas as pd, import matplotlib.pyplot as plt
-- Never use variables before they are defined
+- Set matplotlib backend to 'Agg' immediately after import
+- Use plt.close() after saving to prevent memory issues
+- Never use plt.show() in threaded environment
 - Always define chart_path for image_path response
+- Use try-except blocks for data fetching
 
-SEARCH QUERIES FOR REAL DATA:
-- "USDA corn production 2024 statistics"
-- "current wheat prices per bushel"
-- "soybean yield data by state"
-- "fertilizer cost trends 2024"
-- "agricultural commodity market report"
-- "crop insurance premium rates"
-- "farming equipment rental costs"
-
-🚨 NEVER CREATE FAKE DATA - Always use tools to get real market data!
-🚨 ALWAYS ensure chart_path is defined in your code for the image_path response!
+🚨 NEVER use plt.show() or interactive matplotlib features!
+🚨 ALWAYS use matplotlib.use('Agg') and plt.close() after saving!
 """
         )
     
@@ -133,14 +129,14 @@ Agricultural Query: "{query}"
 
 🎯 MISSION: Create visualization using REAL DATA ONLY - NO SAMPLE/FAKE DATA!
 
-CRITICAL REQUIREMENTS:
-1. ALL IMPORTS MUST BE AT THE TOP
-2. Use proper error handling for data fetching
-3. Test all variable definitions
-4. Define chart_path for image_path response
+CRITICAL REQUIREMENTS FOR NON-INTERACTIVE CHART GENERATION:
+1. Set matplotlib backend to 'Agg' immediately
+2. Use plt.close() after saving charts
+3. Never use plt.show()
+4. All imports must be at the top
 
 STEP 1 - FETCH REAL DATA:
-You MUST use the available tools to get actual data:
+Use available tools to get actual data:
 
 For commodity-related queries:
 - Use YFinanceTools to get real futures prices: ZW=F (wheat), ZC=F (corn), ZS=F (soybeans)
@@ -153,30 +149,36 @@ For market/cost queries:
 STEP 2 - GENERATE RESPONSE:
 
 1. extra_message: Provide insights based on the REAL data you fetched
-2. code: Write Python code with PROPER IMPORT ORDER:
+2. code: Write Python code with PROPER STRUCTURE:
 
-CORRECT CODE STRUCTURE:
+CORRECT NON-INTERACTIVE CODE STRUCTURE:
 ```python
-# ALL IMPORTS AT TOP
 import os
 import pandas as pd
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import yfinance as yf
 from datetime import datetime
+import sys
+import inspect
 
-# Setup directories
-base_dir = "../../"
-charts_dir = os.path.join(base_dir, "Generated_charts")
+# Correct path resolution for Capital_One_Launchpad project
+current_file = inspect.getfile(inspect.currentframe())
+agents_dir = os.path.dirname(current_file)
+project_root = os.path.dirname(os.path.dirname(agents_dir))
+charts_dir = os.path.join(project_root, "Generated_charts")
 os.makedirs(charts_dir, exist_ok=True)
 
-# Fetch real data with error handling
+# Initialize variables at the top level
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+chart_path = os.path.join(charts_dir, f"real_data_{{timestamp}}.png")
+
 try:
-    # Use YFinance for real data
-    data = yf.download('ZC=F', period='6mo')  # Corn example
+    data = yf.download('ZC=F', period='6mo')
     prices = data['Close'].dropna()
     
-    # Create visualization
     plt.figure(figsize=(12, 6))
     plt.plot(prices.index, prices.values, 'g-', linewidth=2)
     plt.title("Real Data Chart - Yahoo Finance")
@@ -184,19 +186,22 @@ try:
     plt.ylabel("Price")
     plt.grid(True, alpha=0.3)
     
-    # Save chart
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    chart_path = os.path.join(charts_dir, f"real_data.png")
+    # Use the pre-defined chart_path
     plt.savefig(chart_path, dpi=300, bbox_inches='tight')
-    plt.show()
+    plt.close()
+    print(f"Chart saved: {{chart_path}}")
     
 except Exception as e:
-    print(f"Error:  e")
+    print(f"Error: {{e}}")
+    # Ensure chart_path is still defined even if there's an error
+    if 'chart_path' not in locals():
+        chart_path = os.path.join(charts_dir, f"error_chart_{{timestamp}}.png")
 ```
 
-3. image_path: Use the chart_path variable from your code
+3. image_path: Always return the chart_path variable value: {{chart_path}}
 
-🚨 CRITICAL: Import ALL libraries at the top, use try-except for data fetching!
+🚨 CRITICAL: Use matplotlib.use('Agg') and plt.close() - NO plt.show()!
+🚨 ALWAYS define timestamp and chart_path at the top level before try block!
 
 Generate response for: {query}
 """
@@ -215,7 +220,6 @@ Generate response for: {query}
             if hasattr(response, 'code') and response.code:
                 print(f"\nExecuting real data visualization code...")
                 
-                # Clean the code of any markdown artifacts
                 code_to_execute = response.code.strip()
                 if code_to_execute.startswith('```'):
                     lines = code_to_execute.split('\n')
@@ -223,41 +227,72 @@ Generate response for: {query}
                     end_idx = len(lines) - 1 if lines[-1].strip() == '```' else len(lines)
                     code_to_execute = '\n'.join(lines[start_idx:end_idx])
                 
-                # Add safety imports at the top if missing
+                # Define variables in the execution context
+                exec_globals = {
+                    '__builtins__': __builtins__,
+                    'timestamp': None,
+                    'chart_path': None
+                }
+                
                 required_imports = [
                     "import os",
                     "import pandas as pd", 
+                    "import matplotlib",
+                    "matplotlib.use('Agg')",
                     "import matplotlib.pyplot as plt",
                     "import numpy as np",
                     "import yfinance as yf",
-                    "from datetime import datetime"
+                    "from datetime import datetime",
+                    "import sys",
+                    "import inspect"
                 ]
                 
-                # Check if imports are missing and add them
+                # Add timestamp and chart_path initialization if not present
+                if 'timestamp = ' not in code_to_execute:
+                    timestamp_init = '''
+# Initialize variables at the top level
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+chart_path = os.path.join(charts_dir, f"real_data_{timestamp}.png")
+'''
+                    # Find where to insert (after path setup)
+                    if 'charts_dir = ' in code_to_execute:
+                        code_to_execute = code_to_execute.replace(
+                            'os.makedirs(charts_dir, exist_ok=True)',
+                            'os.makedirs(charts_dir, exist_ok=True)' + timestamp_init
+                        )
+                
                 code_lines = code_to_execute.split('\n')
                 import_lines = []
                 other_lines = []
                 
                 for line in code_lines:
-                    if line.strip().startswith('import ') or line.strip().startswith('from '):
+                    if (line.strip().startswith('import ') or 
+                        line.strip().startswith('from ') or 
+                        line.strip().startswith('matplotlib.use')):
                         import_lines.append(line)
                     else:
                         other_lines.append(line)
                 
-                # Ensure all required imports are present
                 existing_imports = '\n'.join(import_lines)
                 for req_import in required_imports:
-                    if req_import not in existing_imports:
-                        import_lines.insert(0, req_import)
+                    if req_import not in existing_imports and not any(req_import.split()[-1] in line for line in import_lines):
+                        import_lines.insert(-1 if req_import.startswith('matplotlib.use') else 0, req_import)
                 
-                # Reconstruct code with imports at top
+                code_to_execute = code_to_execute.replace('plt.show()', '# plt.show() removed for non-interactive mode')
+                if 'plt.close()' not in code_to_execute:
+                    code_to_execute = code_to_execute.replace('plt.savefig', 'plt.savefig') + '\nplt.close()'
+                
                 final_code = '\n'.join(import_lines) + '\n\n' + '\n'.join(other_lines)
                 
-                # Execute the cleaned and fixed code
-                exec(final_code)
+                exec(final_code, exec_globals)
                 print(f"\nReal data visualization completed successfully!")
-                if hasattr(response, 'image_path'):
-                    print(f"Chart saved to: {response.image_path}")
+                
+                # Get the chart_path from execution context
+                if 'chart_path' in exec_globals and exec_globals['chart_path']:
+                    print(f"Chart saved to: {exec_globals['chart_path']}")
+                elif hasattr(response, 'image_path') and response.image_path:
+                    print(f"Chart path from response: {response.image_path}")
+                    
             else:
                 print(f"\nNo code generated in response")
             
