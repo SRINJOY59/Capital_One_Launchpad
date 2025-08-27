@@ -38,8 +38,12 @@ def upload_to_imagekit(file_path):
 
         if not upload_result:
             raise Exception("Upload failed - no result returned")
-
-        if hasattr(upload_result, 'url'):
+        if isinstance(upload_result, dict):
+            if upload_result.get("response") and upload_result["response"].get("url"):
+                url = upload_result["response"]["url"]
+            else:
+                url = None
+        elif hasattr(upload_result, 'url'):
             url = upload_result.url
         elif isinstance(upload_result, dict):
             url = upload_result.get("url")
