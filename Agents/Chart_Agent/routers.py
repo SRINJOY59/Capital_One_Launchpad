@@ -16,7 +16,7 @@ async def generate_chart(request: ChartRequest):
         return ChartResponse(
             extra_message=response.extra_message,
             code=response.code,
-            image_path=response.image_path,
+            image_path=response.imagekit_url,
             success=True
         )
     

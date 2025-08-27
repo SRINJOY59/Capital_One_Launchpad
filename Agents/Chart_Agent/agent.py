@@ -2,7 +2,6 @@ from agno.agent import Agent
 from agno.models.google import Gemini
 from agno.tools.python import PythonTools
 from agno.tools.googlesearch import GoogleSearchTools
-from agno.tools.duckduckgo import DuckDuckGoTools
 from agno.tools.yfinance import YFinanceTools
 from dotenv import load_dotenv
 from datetime import datetime
@@ -16,6 +15,7 @@ class AgriculturalChartAgentConfig(BaseModel):
     extra_message : str 
     code : str 
     image_path : str
+    imagekit_url: str = ""  # Add ImageKit URL field
 
 class AgriculturalChartAgent:
     def __init__(self):
@@ -24,7 +24,6 @@ class AgriculturalChartAgent:
             tools=[
                 PythonTools(),
                 GoogleSearchTools(),
-                DuckDuckGoTools(), 
                 YFinanceTools()
             ],
             show_tool_calls=True,
@@ -36,7 +35,7 @@ You are an agricultural data visualization expert with access to real-time data.
 🚨 CRITICAL: NEVER USE HARDCODED/SAMPLE DATA. ALWAYS FETCH REAL DATA FIRST!
 
 MANDATORY DATA SOURCES:
-1. **YFinanceTools**: For commodity prices and agricultural stocks
+1. *YFinanceTools*: For commodity prices and agricultural stocks
    - Wheat futures: ZW=F
    - Corn futures: ZC=F  
    - Soybean futures: ZS=F
@@ -46,30 +45,25 @@ MANDATORY DATA SOURCES:
    - Rice futures: ZR=F
    - Agricultural ETFs: DBA, CORN, SOYB, WEAT
 
-2. **GoogleSearchTools**: For current market data, USDA reports, crop statistics
+2. *GoogleSearchTools*: For current market data, USDA reports, crop statistics
    - Search: "USDA crop report 2024"
    - Search: "current fertilizer prices per ton"
    - Search: "crop yield statistics by state 2024"
    - Search: "agricultural weather impact data"
 
-3. **DuckDuckGoTools**: Alternative search for agricultural data
-   - Search: "commodity prices today agricultural"
-   - Search: "farming costs analysis 2024"
-   - Search: "crop insurance rates current"
-
 REAL DATA FETCHING WORKFLOW:
-1. **Identify Data Needed**: Determine what specific agricultural data the query requires
-2. **Use YFinanceTools**: Fetch commodity prices, agricultural stock data
-3. **Use Search Tools**: Get current market reports, statistics, costs
-4. **Process Real Data**: Clean and prepare the actual fetched data
-5. **Visualize Real Data**: Create charts using only the real data obtained
+1. *Identify Data Needed*: Determine what specific agricultural data the query requires
+2. *Use YFinanceTools*: Fetch commodity prices, agricultural stock data
+3. *Use Search Tools*: Get current market reports, statistics, costs
+4. *Process Real Data*: Clean and prepare the actual fetched data
+5. *Visualize Real Data*: Create charts using only the real data obtained
 
 RESPONSE FORMAT:
 - extra_message: Insights based on REAL data analysis with specific numbers and trends
 - code: Python code that FETCHES and VISUALIZES real data only
 - image_path: Full path where the chart image will be saved
 
-REQUIRED CODE PATTERN WITH PROPER IMPORTS:
+REQUIRED CODE PATTERN:
 ```python
 import os
 import pandas as pd
@@ -79,10 +73,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import yfinance as yf
 from datetime import datetime
-
-# Correct path resolution for project structure
 import sys
 import inspect
+
+# Correct path resolution for project structure
 current_file = inspect.getfile(inspect.currentframe())
 agents_dir = os.path.dirname(current_file)
 project_root = os.path.dirname(os.path.dirname(agents_dir))
@@ -134,6 +128,7 @@ CRITICAL REQUIREMENTS FOR NON-INTERACTIVE CHART GENERATION:
 2. Use plt.close() after saving charts
 3. Never use plt.show()
 4. All imports must be at the top
+5. Save chart to local path only
 
 STEP 1 - FETCH REAL DATA:
 Use available tools to get actual data:
@@ -149,7 +144,8 @@ For market/cost queries:
 STEP 2 - GENERATE RESPONSE:
 
 1. extra_message: Provide insights based on the REAL data you fetched
-2. code: Write Python code with PROPER STRUCTURE:
+2. code: Write Python code with PROPER STRUCTURE to save chart locally
+3. image_path: Local file path where chart is saved
 
 CORRECT NON-INTERACTIVE CODE STRUCTURE:
 ```python
@@ -186,130 +182,93 @@ try:
     plt.ylabel("Price")
     plt.grid(True, alpha=0.3)
     
-    # Use the pre-defined chart_path
+    # Save chart locally
     plt.savefig(chart_path, dpi=300, bbox_inches='tight')
     plt.close()
     print(f"Chart saved: {{chart_path}}")
     
 except Exception as e:
     print(f"Error: {{e}}")
-    # Ensure chart_path is still defined even if there's an error
+    # Ensure variables are still defined even if there's an error
     if 'chart_path' not in locals():
         chart_path = os.path.join(charts_dir, f"error_chart_{{timestamp}}.png")
 ```
-
-3. image_path: Always return the chart_path variable value: {{chart_path}}
-
-🚨 CRITICAL: Use matplotlib.use('Agg') and plt.close() - NO plt.show()!
-🚨 ALWAYS define timestamp and chart_path at the top level before try block!
-
 Generate response for: {query}
 """
         
         try:            
-            response = self.agent.run(enhanced_prompt).content
+            print(f"Processing query: {query}")
+            response = self.agent.run(enhanced_prompt)
             
-            if hasattr(response, 'extra_message') and response.extra_message:
+            # Handle different response types
+            if hasattr(response, 'content'):
+                response_content = response.content
+            else:
+                response_content = response
+            
+            if hasattr(response_content, 'extra_message') and response_content.extra_message:
                 print(f"\nREAL DATA INSIGHTS & RECOMMENDATIONS:")
-                print(f"{response.extra_message}")
+                print(f"{response_content.extra_message}")
                 print("="*60)
             
-            if hasattr(response, 'image_path') and response.image_path:
-                print(f"\nChart will be saved to: {response.image_path}")
-            
-            if hasattr(response, 'code') and response.code:
+            if hasattr(response_content, 'code') and response_content.code:
                 print(f"\nExecuting real data visualization code...")
                 
-                code_to_execute = response.code.strip()
+                code_to_execute = response_content.code.strip()
                 if code_to_execute.startswith('```'):
                     lines = code_to_execute.split('\n')
                     start_idx = 1 if lines[0].startswith('```') else 0
                     end_idx = len(lines) - 1 if lines[-1].strip() == '```' else len(lines)
                     code_to_execute = '\n'.join(lines[start_idx:end_idx])
                 
-                # Define variables in the execution context
+                # Create a proper execution environment
+                import builtins
                 exec_globals = {
-                    '__builtins__': __builtins__,
-                    'timestamp': None,
-                    'chart_path': None
+                    '__builtins__': builtins.__dict__,
+                    '__name__': '__main__',
+                    '__doc__': None,
+                    '__package__': None
                 }
+                exec_locals = {}
                 
-                required_imports = [
-                    "import os",
-                    "import pandas as pd", 
-                    "import matplotlib",
-                    "matplotlib.use('Agg')",
-                    "import matplotlib.pyplot as plt",
-                    "import numpy as np",
-                    "import yfinance as yf",
-                    "from datetime import datetime",
-                    "import sys",
-                    "import inspect"
-                ]
-                
-                # Add timestamp and chart_path initialization if not present
-                if 'timestamp = ' not in code_to_execute:
-                    timestamp_init = '''
-# Initialize variables at the top level
-timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-chart_path = os.path.join(charts_dir, f"real_data_{timestamp}.png")
-'''
-                    # Find where to insert (after path setup)
-                    if 'charts_dir = ' in code_to_execute:
-                        code_to_execute = code_to_execute.replace(
-                            'os.makedirs(charts_dir, exist_ok=True)',
-                            'os.makedirs(charts_dir, exist_ok=True)' + timestamp_init
-                        )
-                
-                code_lines = code_to_execute.split('\n')
-                import_lines = []
-                other_lines = []
-                
-                for line in code_lines:
-                    if (line.strip().startswith('import ') or 
-                        line.strip().startswith('from ') or 
-                        line.strip().startswith('matplotlib.use')):
-                        import_lines.append(line)
-                    else:
-                        other_lines.append(line)
-                
-                existing_imports = '\n'.join(import_lines)
-                for req_import in required_imports:
-                    if req_import not in existing_imports and not any(req_import.split()[-1] in line for line in import_lines):
-                        import_lines.insert(-1 if req_import.startswith('matplotlib.use') else 0, req_import)
-                
-                code_to_execute = code_to_execute.replace('plt.show()', '# plt.show() removed for non-interactive mode')
-                if 'plt.close()' not in code_to_execute:
-                    code_to_execute = code_to_execute.replace('plt.savefig', 'plt.savefig') + '\nplt.close()'
-                
-                final_code = '\n'.join(import_lines) + '\n\n' + '\n'.join(other_lines)
-                
-                exec(final_code, exec_globals)
-                print(f"\nReal data visualization completed successfully!")
-                
-                # Get the chart_path from execution context
-                if 'chart_path' in exec_globals and exec_globals['chart_path']:
-                    print(f"Chart saved to: {exec_globals['chart_path']}")
-                elif hasattr(response, 'image_path') and response.image_path:
-                    print(f"Chart path from response: {response.image_path}")
+                try:
+                    exec(code_to_execute, exec_globals, exec_locals)
+                    print(f"\nReal data visualization completed successfully!")
+                    
+                    # Get results from execution context - check both globals and locals
+                    chart_path = exec_locals.get('chart_path') or exec_globals.get('chart_path')
+                    
+                    if chart_path:
+                        print(f"Chart saved to: {chart_path}")
+                        
+                        # Upload to ImageKit after getting the local path
+                        try:
+                            from .imagekit_upload import upload_to_imagekit
+                            imagekit_url = upload_to_imagekit(chart_path)
+                            if imagekit_url:
+                                print(f"ImageKit URL: {imagekit_url}")
+                                # Update response with ImageKit URL
+                                if hasattr(response_content, 'imagekit_url'):
+                                    response_content.imagekit_url = imagekit_url
+                            else:
+                                print("ImageKit upload failed")
+                        except Exception as upload_error:
+                            print(f"ImageKit upload error: {upload_error}")
+                            
+                except Exception as exec_error:
+                    print(f"Error executing code: {exec_error}")
+                    import traceback
+                    traceback.print_exc()
                     
             else:
                 print(f"\nNo code generated in response")
             
         except Exception as e:
-            print(f"\nError executing code: {str(e)}")
-            print(f"\nDebug info:")
-            print(f"Error type: {type(e).__name__}")
-            print(f"Error details: {str(e)}")
-            if 'response' in locals() and hasattr(response, 'code'):
-                print(f"\nGenerated code:")
-                print("-" * 40)
-                print(response.code)
-                print("-" * 40)
-            else:
-                print("No code attribute found in response")
+            print(f"\nError in generate_response: {str(e)}")
+            import traceback
+            traceback.print_exc()
         
-        return response if 'response' in locals() else None
+        return response_content if 'response_content' in locals() else None
 
 def main():
     agent = AgriculturalChartAgent()
