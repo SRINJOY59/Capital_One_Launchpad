@@ -12,6 +12,11 @@ def get_personalised_advice(request: AssistantRequest):
             preferred_language=request.preferred_language,
             crops=request.crops,
             total_land_area=request.total_land_area,
+            season=request.season,
+            farming_type=request.farming_type,
+            irrigation=request.irrigation,
+            budget=request.budget,
+            experience=request.experience
         )
         answer = assistant.run()
         return AssistantResponse(answer=answer)
