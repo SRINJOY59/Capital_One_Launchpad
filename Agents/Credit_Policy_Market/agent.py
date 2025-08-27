@@ -162,7 +162,13 @@ OUTPUT REQUIREMENTS:
 
     def respond_to_query(self, query: str) -> str:
         response = self.agent.run(query)
-        print(response.metrics)
+        usage = response.metrics
+        aggregated = {
+            "input_tokens": sum(usage["input_tokens"]),
+            "output_tokens": sum(usage["output_tokens"]),
+            "total_tokens": sum(usage["total_tokens"])
+        }
+        print(f"  - Token Usage: {aggregated}")
         return response.content
 
 
