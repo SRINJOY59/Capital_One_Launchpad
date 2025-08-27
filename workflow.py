@@ -27,6 +27,7 @@ from Agents.Crop_Yield.agent import CropYieldAssistant
 from Agents.Query_rewriter import QueryRewriterAgent
 from Agents.Chart_Agent.agent import AgriculturalChartAgent
 from Agents.Fertilizer_Recommender.agent import FertilizerRecommendationAgent
+from Agents.Guardrails.agent import AgriculturalGuardrailsAgent
 from utils.Internet_checker import InternetChecker
 from utils.hf_model import HFModel
 
@@ -41,6 +42,7 @@ if not internet_checker.is_connected():
 else: 
     print("Online mode detected")
 
+guardrails_agent = AgriculturalGuardrailsAgent()
 crop_recommender_agent = CropRecommenderAgent()
 weather_forecast_agent = WeatherForecastAgent()
 location_agri_assistant = LocationAgriAssistant()
@@ -81,6 +83,9 @@ class MainWorkflowState(TypedDict):
     is_image_query: bool
     chart_path: str
     chart_extra_message: str
+    guardrails_result: Dict[str, Any]
+    is_agriculture_related: bool
+    guardrails_response: str
 
 def run_adaptive_rag(query: str) -> str:
     rag_system = ParallelRAGSystem(model="gemini-2.0-flash", k=3)
@@ -199,6 +204,36 @@ def grade_answer(question: str, answer: str) -> Dict[str, Any]:
             "error": str(e)
         }
 
+def guardrails_node(state: MainWorkflowState):
+    try:
+        guardrails_result = guardrails_agent.evaluate_query(state["query"])
+        print(f"Guardrails evaluation: {guardrails_result}")
+        
+        return {
+            "guardrails_result": {
+                "is_agriculture_related": guardrails_result.is_agriculture_related,
+                "is_greeting": guardrails_result.is_greeting,
+                "response_message": guardrails_result.response_message,
+                "confidence_score": guardrails_result.confidence_score,
+                "category": guardrails_result.category
+            },
+            "is_agriculture_related": guardrails_result.is_agriculture_related,
+            "guardrails_response": guardrails_result.response_message or ""
+        }
+    except Exception as e:
+        print(f"Error in guardrails_node: {str(e)}")
+        return {
+            "guardrails_result": {
+                "is_agriculture_related": False,
+                "is_greeting": True,
+                "response_message": "Hello! I'm here to help you with all your agricultural needs.",
+                "confidence_score": 0.5,
+                "category": "greeting"
+            },
+            "is_agriculture_related": False,
+            "guardrails_response": "Hello! I'm here to help you with all your agricultural needs."
+        }
+
 def rag_node(state: MainWorkflowState):
     rag_response = run_adaptive_rag(state["query"])
     documents = []
@@ -283,6 +318,32 @@ def grading_node(state: MainWorkflowState):
         "answer_grade": answer_grade_result
     }
 
+def guardrails_routing_edge(state: MainWorkflowState):
+    is_agriculture_related = state.get("is_agriculture_related", False)
+    is_greeting = state["guardrails_result"].get("is_greeting", False)
+    
+    print(f"Guardrails routing: agriculture={is_agriculture_related}, greeting={is_greeting}")
+    
+    if not is_agriculture_related and not is_greeting:
+        print("Routing to: guardrails_end")
+        return "guardrails_end"
+    
+    if is_greeting:
+        print("Routing to: greeting_end")
+        return "greeting_end"
+    
+    if state.get("is_image_query", False):
+        print("Routing to: router (image query)")
+        return "router"
+    
+    initial_mode = state["initial_mode"]
+    if initial_mode == "rag":
+        print("Routing to: rag")
+        return "rag"
+    else:
+        print("Routing to: router")
+        return "router"
+
 def mode_decision_edge(state: MainWorkflowState):
     if state.get("is_image_query", False):
         return "end"
@@ -320,19 +381,30 @@ def fallback_node(state: MainWorkflowState):
         "synthesized_result": fallback_response
     }
 
-def start_routing_edge(state: MainWorkflowState):
-    if state.get("is_image_query", False):
-        return "router"
+def guardrails_response_node(state: MainWorkflowState):
+    guardrails_response = state.get("guardrails_response", "")
+    if not guardrails_response:
+        guardrails_response = "I specialize in agricultural assistance. I can help you with farming practices, crop management, weather forecasting, market prices, and other agriculture-related topics. Is there anything farming-related I can help you with?"
     
-    initial_mode = state["initial_mode"]
-    if initial_mode == "rag":
-        return "rag"
-    else:
-        return "router"
+    return {
+        "synthesized_result": guardrails_response
+    }
+
+def greeting_response_node(state: MainWorkflowState):
+    greeting_response = state.get("guardrails_response", "")
+    if not greeting_response:
+        greeting_response = "Hello! I'm here to help you with all your agricultural needs. Whether you have questions about crop cultivation, pest management, weather forecasting, or market prices, I'm ready to assist. How can I help you with your farming today?"
+    
+    return {
+        "synthesized_result": greeting_response
+    }
 
 def build_hybrid_workflow_graph():
     graph = StateGraph(MainWorkflowState)
     
+    graph.add_node("guardrails", guardrails_node)
+    graph.add_node("guardrails_response", guardrails_response_node)
+    graph.add_node("greeting_response", greeting_response_node)
     graph.add_node("rag", rag_node)
     graph.add_node("router", router_node)
     graph.add_node("agent_calls", agent_calls_node)
@@ -341,7 +413,21 @@ def build_hybrid_workflow_graph():
     graph.add_node("switch_to_tooling", switch_to_tooling_node)
     graph.add_node("fallback", fallback_node)
     
-    graph.add_conditional_edges(START, start_routing_edge, {"rag": "rag", "router": "router"})
+    graph.add_edge(START, "guardrails")
+    
+    graph.add_conditional_edges(
+        "guardrails", 
+        guardrails_routing_edge, 
+        {
+            "guardrails_end": "guardrails_response",
+            "greeting_end": "greeting_response",
+            "rag": "rag", 
+            "router": "router"
+        }
+    )
+    
+    graph.add_edge("guardrails_response", END)
+    graph.add_edge("greeting_response", END)
     
     graph.add_edge("rag", "grading")
     graph.add_edge("router", "agent_calls")
@@ -366,8 +452,6 @@ def build_hybrid_workflow_graph():
 hybrid_workflow_graph = build_hybrid_workflow_graph()
 compiled_hybrid_graph = hybrid_workflow_graph.compile()
 
-
-
 def run_workflow(query: str, mode: str = "rag", image_path: str = None) -> Dict[str, Any]:
     if not internet_checker.is_connected() and hf_model:
         hf_response = hf_model.infer(query)
@@ -379,7 +463,11 @@ def run_workflow(query: str, mode: str = "rag", image_path: str = None) -> Dict[
             "switched_modes": False,
             "is_image_query": image_path is not None,
             "chart_path": "",
-            "chart_extra_message": ""
+            "chart_extra_message": "",
+            "is_agriculture_related": True,
+            "guardrails_passed": True,
+            "guardrails_category": "agriculture",
+            "guardrails_confidence": 1.0
         }
     
     is_image_query = image_path is not None
@@ -403,35 +491,82 @@ def run_workflow(query: str, mode: str = "rag", image_path: str = None) -> Dict[
         has_switched_mode=False,
         is_image_query=is_image_query,
         chart_path="",
-        chart_extra_message=""
+        chart_extra_message="",
+        guardrails_result={},
+        is_agriculture_related=False,
+        guardrails_response=""
     )
     
     if mode.lower() not in ["rag", "tooling"]:
         raise ValueError("Mode must be either 'rag' or 'tooling'")
     
-    final_state = compiled_hybrid_graph.invoke(state)
-    
-    return {
-        "answer": final_state["synthesized_result"],
-        "answer_quality_grade": final_state.get("answer_grade", {}),
-        "is_answer_complete": final_state.get("answer_grade", {}).get("is_good_answer", False),
-        "final_mode": final_state.get("current_mode", mode),
-        "switched_modes": final_state.get("has_switched_mode", False),
-        "is_image_query": final_state.get("is_image_query", False),
-        "chart_path": final_state.get("chart_path", ""),
-        "chart_extra_message": final_state.get("chart_extra_message", "")
-    }
+    try:
+        final_state = compiled_hybrid_graph.invoke(state)
+        
+        if final_state is None:
+            return {
+                "answer": "Error: Workflow execution failed",
+                "answer_quality_grade": {"is_good_answer": False, "reasoning": "Workflow execution error"},
+                "is_answer_complete": False,
+                "final_mode": mode,
+                "switched_modes": False,
+                "is_image_query": is_image_query,
+                "chart_path": "",
+                "chart_extra_message": "",
+                "is_agriculture_related": False,
+                "guardrails_passed": False,
+                "guardrails_category": "error",
+                "guardrails_confidence": 0.0
+            }
+        
+        answer_grade = final_state.get("answer_grade") or {}
+        guardrails_result = final_state.get("guardrails_result") or {}
+        
+        return {
+            "answer": final_state.get("synthesized_result", "No response generated"),
+            "answer_quality_grade": answer_grade,
+            "is_answer_complete": answer_grade.get("is_good_answer", True),
+            "final_mode": final_state.get("current_mode", mode),
+            "switched_modes": final_state.get("has_switched_mode", False),
+            "is_image_query": final_state.get("is_image_query", False),
+            "chart_path": final_state.get("chart_path", ""),
+            "chart_extra_message": final_state.get("chart_extra_message", ""),
+            "is_agriculture_related": final_state.get("is_agriculture_related", False),
+            "guardrails_passed": final_state.get("is_agriculture_related", False) or guardrails_result.get("is_greeting", False),
+            "guardrails_category": guardrails_result.get("category", ""),
+            "guardrails_confidence": guardrails_result.get("confidence_score", 0.0)
+        }
+        
+    except Exception as e:
+        print(f"Workflow execution error: {str(e)}")
+        return {
+            "answer": f"Error executing workflow: {str(e)}",
+            "answer_quality_grade": {"is_good_answer": False, "reasoning": f"Workflow error: {str(e)}"},
+            "is_answer_complete": False,
+            "final_mode": mode,
+            "switched_modes": False,
+            "is_image_query": is_image_query,
+            "chart_path": "",
+            "chart_extra_message": "",
+            "is_agriculture_related": False,
+            "guardrails_passed": False,
+            "guardrails_category": "error",
+            "guardrails_confidence": 0.0
+        }
 
 if __name__ == "__main__":
     import time
     questions = [
-        # "Hello how are you?",
-        # "Estimate crop yield for wheat in Punjab in winter of 2025",
-        # "How can farmers manage pest outbreaks in cotton fields?",
-        # "What is the market price trend for wheat in India?",
-        # "How to prevent fungal diseases in tomato crops?",
+        "Hello how are you?",
+        "Estimate crop yield for wheat in Punjab in winter of 2025",
+        "How can farmers manage pest outbreaks in cotton fields?",
+        "What is the market price trend for wheat in India?",
+        "How to prevent fungal diseases in tomato crops?",
         "Create a chart showing corn price trends over the last year",
-        "Generate a graph for wheat yield predictions"
+        "Generate a graph for wheat yield predictions",
+        "Tell me about cryptocurrency",
+        "What's the capital of France?",
+        "How to cook pasta?"
     ]
     
     image_queries = [
@@ -470,6 +605,10 @@ if __name__ == "__main__":
         print(f"  - Switched Modes: {result['switched_modes']}")
         print(f"  - Is Image Query: {result['is_image_query']}")
         print(f"  - Processing Time: {end_time - start_time:.2f}s")
+        print(f"  - Guardrails Passed: {result['guardrails_passed']}")
+        print(f"  - Agriculture Related: {result['is_agriculture_related']}")
+        print(f"  - Guardrails Category: {result['guardrails_category']}")
+        print(f"  - Guardrails Confidence: {result['guardrails_confidence']:.2f}")
         
         if result.get("chart_path"):
             print(f"  - Chart Generated: {result['chart_path']}")
