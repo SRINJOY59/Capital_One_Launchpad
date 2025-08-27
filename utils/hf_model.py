@@ -13,7 +13,6 @@ class HFModel:
         self.model, self.tokenizer = self._load_model()
 
     def _load_model(self):
-        # Load base model and tokenizer
         if os.path.exists(self.base_model_dir):
             tokenizer = AutoTokenizer.from_pretrained(self.base_model_dir, trust_remote_code=True, local_files_only=True)
             base_model = AutoModelForCausalLM.from_pretrained(
