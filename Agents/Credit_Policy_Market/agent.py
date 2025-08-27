@@ -161,7 +161,9 @@ OUTPUT REQUIREMENTS:
             )
 
     def respond_to_query(self, query: str) -> str:
-        return self.agent.run(query).content
+        response = self.agent.run(query)
+        print(response.metrics)
+        return response.content
 
 
 if __name__ == "__main__":

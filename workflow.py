@@ -150,12 +150,16 @@ def call_agent_simple(agent_name: str, query: str, image_path: str = None) -> Di
         if agent_name == "ChartAgent" and agent_response:
             chart_path = ""
             extra_message = ""
-            
-            if hasattr(agent_response, 'image_path') and agent_response.image_path:
-                chart_path = agent_response.image_path
-            
-            if hasattr(agent_response, 'extra_message') and agent_response.extra_message:
+
+            if hasattr(agent_response, 'imagekit_url'):
+                chart_path = agent_response.imagekit_url
+            elif isinstance(agent_response, dict) and 'imagekit_url' in agent_response:
+                chart_path = agent_response['imagekit_url']
+
+            if hasattr(agent_response, 'extra_message'):
                 extra_message = agent_response.extra_message
+            elif isinstance(agent_response, dict) and 'extra_message' in agent_response:
+                extra_message = agent_response['extra_message']
             
             response_text = f"{extra_message}\n\nChart generated at: {chart_path}" if chart_path else extra_message
             
@@ -242,6 +246,8 @@ def agent_calls_node(state: MainWorkflowState):
                 print(f"Agent {agent_name} Response: {result['response']}")
                 
                 if agent_name == "ChartAgent":
+                    print("Agent ChartAgent Response:", result)
+                    agent_responses[agent_name] = result["extra_message"]
                     chart_path = result.get("chart_path", "")
                     chart_extra_message = result.get("extra_message", "")
                 

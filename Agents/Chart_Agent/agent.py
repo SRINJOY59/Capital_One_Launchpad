@@ -247,7 +247,6 @@ Generate response for: {query}
                             imagekit_url = upload_to_imagekit(chart_path)
                             if imagekit_url:
                                 print(f"ImageKit URL: {imagekit_url}")
-                                # Update response with ImageKit URL
                                 if hasattr(response_content, 'imagekit_url'):
                                     response_content.imagekit_url = imagekit_url
                             else:
