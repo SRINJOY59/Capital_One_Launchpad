@@ -18,7 +18,6 @@ project_root = os.path.dirname(parent_dir)
 sys.path.append(parent_dir)
 sys.path.append(project_root)
 
-from Tools.web_scrapper import WebScrapper
 from Tools.translation_tool import MultiLanguageTranslator
 
 
@@ -51,7 +50,6 @@ class PersonalizedAssistant:
         self.experience = experience
 
         # Custom tools
-        self.scrapper = WebScrapper()
         self.translator = MultiLanguageTranslator()
 
         # Agent 1: Web search + agricultural practices
@@ -61,9 +59,6 @@ class PersonalizedAssistant:
                 GoogleMapTools(),
                 TavilyTools(),
                 GoogleSearchTools(),
-                self.scrapper.extract_table,
-                self.scrapper.extract_text,
-                self.scrapper.extract_links,
             ],
             instructions="""
                 You are a personalized agricultural advisor and web search agent.
@@ -79,7 +74,7 @@ class PersonalizedAssistant:
         # Agent 2: Market & Policy insights
         self.market_agent = Agent(
             model=Gemini(id="gemini-2.0-flash"),
-            tools=[GoogleSearchTools(), TavilyTools(), self.scrapper.extract_text],
+            tools=[GoogleSearchTools(), TavilyTools()],
             instructions="""
                 You are a market and agricultural policy advisor.
                 Your responsibilities include:
