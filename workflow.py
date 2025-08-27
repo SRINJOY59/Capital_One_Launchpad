@@ -25,6 +25,7 @@ from Agents.Risk_Management.agent import AgriculturalRiskAnalysisAgent
 from Agents.Web_Scrapping.agent import AgriculturalWebScrappingAgent
 from Agents.Crop_Yield.agent import CropYieldAssistant
 from Agents.Query_rewriter import QueryRewriterAgent
+from prompt_optimizer.poptim import EntropyOptim
 from Agents.Fertilizer_Recommender.agent import FertilizerRecommendationAgent
 from utils.Internet_checker import InternetChecker
 from utils.hf_model import HFModel
@@ -325,7 +326,11 @@ def build_hybrid_workflow_graph():
 hybrid_workflow_graph = build_hybrid_workflow_graph()
 compiled_hybrid_graph = hybrid_workflow_graph.compile()
 
+p_optimizer = EntropyOptim(verbose=True, p=0.2)
+
+
 def run_workflow(query: str, mode: str = "rag", image_path: str = None) -> Dict[str, Any]:
+    query = p_optimizer(query).content 
     if not internet_checker.is_connected() and hf_model:
         hf_response = hf_model.infer(query)
         return {
