@@ -30,7 +30,6 @@ from Tools.tool_apis_router import router as tool_apis_router
 
 from workflow import run_workflow
 
-
 app = FastAPI(
     title="Agricultural Agent API",
     description="API for multilingual agricultural assistance, analytics, and hybrid workflow processing",
@@ -60,6 +59,8 @@ class WorkflowResponse(BaseModel):
     final_mode: str
     switched_modes: bool
     is_image_query: bool
+    chart_path: Optional[str] = None
+    chart_extra_message: Optional[str] = None
     processing_time: Optional[float] = None
 
 app.include_router(multilingual_router)
@@ -84,7 +85,6 @@ app.include_router(tool_apis_router)
 
 @app.get("/health", tags=["Health"])
 async def health_check():
-    """Health check endpoint for monitoring and Docker health checks"""
     return {
         "status": "healthy",
         "service": "Agricultural AI API",
@@ -94,7 +94,6 @@ async def health_check():
 
 @app.get("/", tags=["Root"])
 async def root():
-    """Root endpoint with API information"""
     return {
         "message": "Agricultural AI API",
         "version": "1.0.0",
@@ -102,10 +101,8 @@ async def root():
         "health": "/health"
     }
 
-
 @app.post("/api/v1/workflow/process", response_model=WorkflowResponse, tags=["Hybrid Workflow"])
 async def process_workflow_query(request: WorkflowRequestNormalQuery):
-
     try:
         if request.mode.lower() not in ["rag", "tooling"]:
             raise HTTPException(
@@ -143,11 +140,8 @@ async def process_workflow_with_image(
 ):
     temp_file_path = None
     try:
-
-
         image_path = None
 
-        # Handle image upload if provided
         if image:
             allowed_extensions = {'.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.webp'}
             file_extension = Path(image.filename).suffix.lower()
@@ -167,7 +161,6 @@ async def process_workflow_with_image(
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"Error saving uploaded image: {str(e)}")
 
-        # Process the workflow
         start_time = time.time()
         result = run_workflow(
             query=query,
@@ -182,7 +175,6 @@ async def process_workflow_with_image(
         elif "answer_quality_grade" in result and hasattr(result["answer_quality_grade"], "__dict__"):
             result["answer_quality_grade"] = dict(result["answer_quality_grade"].__dict__)
 
-        
         if temp_file_path and os.path.exists(temp_file_path):
             try:
                 os.unlink(temp_file_path)
@@ -194,7 +186,6 @@ async def process_workflow_with_image(
         return JSONResponse(content=result)
 
     except ValueError as e:
-        # Clean up temp file on error
         if temp_file_path and os.path.exists(temp_file_path):
             try:
                 os.unlink(temp_file_path)
@@ -202,7 +193,6 @@ async def process_workflow_with_image(
                 print(f"Warning: Could not clean up temp file: {cleanup_err}")
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        # Clean up temp file on error
         if temp_file_path and os.path.exists(temp_file_path):
             try:
                 os.unlink(temp_file_path)
@@ -210,49 +200,160 @@ async def process_workflow_with_image(
                 print(f"Warning: Could not clean up temp file: {cleanup_err}")
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
-
-
-@app.get("/")
-async def root():
+@app.get("/api/v1/workflow/modes", tags=["Hybrid Workflow"])
+async def get_workflow_modes():
     return {
-        "message": "Agricultural Agent API",
-        "version": "1.0.0",
-        "description": "Comprehensive agricultural assistance with hybrid RAG-Agent workflow processing",
-        "endpoints": {
-            # Existing endpoints
-            "agriculture_query": "/api/v1/agriculture/respond",
-            "risk_analysis": "/api/v1/risk/analyze",
-            "web_scrap": "/api/v1/webscrap/scrape",
-            "credit_policy": "/api/v1/creditpolicy/analyze",
-            "weather_forecast": "/api/v1/weather/forecast",
-            "pest_prediction": "/api/v1/pest/predict",
-            
-            # New workflow endpoints
-            "hybrid_workflow": "/api/v1/workflow/process",
-            "workflow_with_image": "/api/v1/workflow/process-with-image",
-            "workflow_modes": "/api/v1/workflow/modes",
-            "available_agents": "/api/v1/workflow/agents",
-            "test_workflow": "/api/v1/workflow/test-queries"
+        "available_modes": ["rag", "tooling"],
+        "mode_descriptions": {
+            "rag": "Retrieval-Augmented Generation using document search and synthesis",
+            "tooling": "Agent-based processing using specialized agricultural tools"
         },
-        "features": [
-            "Multi-agent agricultural assistance",
-            "Hybrid RAG-Tooling workflow",
-            "Image analysis capabilities",
-            "Multi-language support",
-            "Real-time data integration",
-            "Quality-driven answer generation"
+        "default_mode": "rag",
+        "adaptive_switching": "Automatically switches modes based on answer quality assessment"
+    }
+
+@app.get("/api/v1/workflow/agents", tags=["Hybrid Workflow"])
+async def get_available_agents():
+    return {
+        "available_agents": [
+            "CropRecommenderAgent",
+            "WeatherForecastAgent",
+            "LocationAgriAssistant", 
+            "NewsAgent",
+            "CreditPolicyMarketAgent",
+            "CropDiseaseDetectionAgent",
+            "ImageAnalysisAgent",
+            "MarketPriceAgent",
+            "MultiLanguageTranslatorAgent",
+            "PestPredictionAgent",
+            "RiskManagementAgent",
+            "WebScrapingAgent",
+            "CropYieldAgent",
+            "FertilizerRecommenderAgent",
+            "ChartAgent"
+        ],
+        "agent_descriptions": {
+            "CropRecommenderAgent": "Provides crop recommendations based on conditions",
+            "WeatherForecastAgent": "Weather analysis and forecasting",
+            "LocationAgriAssistant": "Location-specific agricultural information",
+            "NewsAgent": "Agricultural news and market updates", 
+            "CreditPolicyMarketAgent": "Credit policies and market analysis",
+            "CropDiseaseDetectionAgent": "Disease detection and diagnosis",
+            "ImageAnalysisAgent": "General image analysis capabilities",
+            "MarketPriceAgent": "Market price analysis and trends",
+            "MultiLanguageTranslatorAgent": "Multi-language translation services",
+            "PestPredictionAgent": "Pest prediction and management",
+            "RiskManagementAgent": "Agricultural risk assessment",
+            "WebScrapingAgent": "Real-time data scraping",
+            "CropYieldAgent": "Crop yield estimation and analysis",
+            "FertilizerRecommenderAgent": "Fertilizer recommendations",
+            "ChartAgent": "Data visualization and chart generation"
+        },
+        "routing": "Agents are automatically selected by RouterAgent based on query content"
+    }
+
+@app.get("/api/v1/workflow/test-queries", tags=["Hybrid Workflow"])
+async def get_test_queries():
+    return {
+        "text_queries": [
+            "Hello how are you?",
+            "Estimate crop yield for wheat in Punjab in winter of 2025",
+            "How can farmers manage pest outbreaks in cotton fields?",
+            "What is the market price trend for wheat in India?",
+            "How to prevent fungal diseases in tomato crops?",
+            "Create a chart showing corn price trends over the last year",
+            "Recommend fertilizers for rice cultivation in monsoon season"
+        ],
+        "image_queries": [
+            "Analyze this crop disease",
+            "Check for pests in this image",
+            "Identify the crop type in this field",
+            "Assess soil quality from this image"
+        ],
+        "chart_queries": [
+            "Visualize rainfall patterns in agricultural regions",
+            "Show seasonal commodity price fluctuations",
+            "Compare crop yields across different states",
+            "Graph fertilizer price trends over time"
         ]
     }
 
-@app.get("/health")
-async def health_check():
+@app.post("/api/v1/workflow/batch-process", tags=["Hybrid Workflow"])
+async def batch_process_queries(queries: list[str], mode: str = "rag"):
+    if mode.lower() not in ["rag", "tooling"]:
+        raise HTTPException(
+            status_code=400,
+            detail="Mode must be either 'rag' or 'tooling'"
+        )
+    
+    results = []
+    total_start_time = time.time()
+    
+    for i, query in enumerate(queries):
+        try:
+            start_time = time.time()
+            result = run_workflow(
+                query=query,
+                mode=mode.lower(),
+                image_path=None
+            )
+            end_time = time.time()
+            
+            if "answer_quality_grade" in result and hasattr(result["answer_quality_grade"], "dict"):
+                result["answer_quality_grade"] = result["answer_quality_grade"].dict()
+            elif "answer_quality_grade" in result and hasattr(result["answer_quality_grade"], "__dict__"):
+                result["answer_quality_grade"] = dict(result["answer_quality_grade"].__dict__)
+            
+            result["processing_time"] = end_time - start_time
+            result["query_index"] = i
+            result["original_query"] = query
+            
+            results.append(result)
+            
+        except Exception as e:
+            results.append({
+                "query_index": i,
+                "original_query": query,
+                "error": str(e),
+                "processing_time": 0
+            })
+    
+    total_end_time = time.time()
+    
     return {
-        "status": "healthy", 
-        "service": "agriculture-agent-api",
-        "workflow_status": "ready"
+        "batch_results": results,
+        "total_queries": len(queries),
+        "successful_queries": len([r for r in results if "error" not in r]),
+        "failed_queries": len([r for r in results if "error" in r]),
+        "total_processing_time": total_end_time - total_start_time,
+        "average_processing_time": (total_end_time - total_start_time) / len(queries)
     }
 
-@app.get("/api-info")
+@app.get("/api/v1/workflow/status", tags=["Hybrid Workflow"])
+async def get_workflow_status():
+    return {
+        "workflow_status": "active",
+        "supported_features": [
+            "Hybrid RAG-Agent processing",
+            "Adaptive mode switching", 
+            "Quality-driven answer generation",
+            "Image analysis capabilities",
+            "Chart generation",
+            "Multi-language support",
+            "Batch processing",
+            "Real-time data integration"
+        ],
+        "current_capabilities": {
+            "rag_mode": "Available",
+            "tooling_mode": "Available", 
+            "image_processing": "Available",
+            "chart_generation": "Available",
+            "offline_mode": "Available with HF Model",
+            "quality_grading": "Available"
+        }
+    }
+
+@app.get("/api-info", tags=["Information"])
 async def api_info():
     return {
         "api_version": "1.0.0",
@@ -262,17 +363,26 @@ async def api_info():
             "quality_grading": "Evaluates answer completeness and switches strategies if needed",
             "query_rewriting": "Improves query formulation for better results",
             "image_processing": "Handles image-based agricultural queries",
-            "parallel_execution": "Runs multiple agents concurrently for efficiency"
+            "chart_generation": "Creates data visualizations with real market data",
+            "parallel_execution": "Runs multiple agents concurrently for efficiency",
+            "batch_processing": "Process multiple queries simultaneously"
         },
         "supported_agents": [
             "Crop Recommendation", "Weather Forecasting", "Location Agriculture",
             "Agricultural News", "Credit Policy & Market", "Crop Disease Detection", 
             "Image Analysis", "Market Pricing", "Multi-language Translation",
-            "Pest Prediction", "Risk Management", "Web Scraping", "Crop Yield Estimation"
+            "Pest Prediction", "Risk Management", "Web Scraping", "Crop Yield Estimation",
+            "Chart Generation", "Fertilizer Recommendation"
         ],
         "workflow_modes": {
             "rag": "Retrieval-Augmented Generation using document search and synthesis",
             "tooling": "Agent-based processing using specialized agricultural tools"
+        },
+        "new_features": {
+            "chart_generation": "Real-time data visualization with market insights",
+            "enhanced_image_processing": "Improved crop disease and pest detection",
+            "batch_processing": "Process multiple queries efficiently",
+            "workflow_status_monitoring": "Track system capabilities and performance"
         }
     }
 
