@@ -143,7 +143,7 @@ class PersonalizedAssistant:
         return f"""{profile}
 
         Task:
-        Write a response within 250 words, that is crisp and concise.
+        Write a proper comprehensive response for this
         Provide:
         - Current best agricultural practices tailored to the crops and land size in the specified region.
         - Fertilizer usage, pesticide updates, irrigation methods, and eco-friendly practices.

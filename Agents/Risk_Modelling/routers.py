@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from .agent import RiskMitigationOrchestrator
 from .schemas import RiskAnalysisRequest, RiskAnalysisResponse
 
-router = APIRouter()
+router = APIRouter(prefix="/api/v1", tags = ["Risk Analysis"])
 
 @router.post("/risk-analysis", response_model=RiskAnalysisResponse)
 def get_risk_analysis(request: RiskAnalysisRequest):
