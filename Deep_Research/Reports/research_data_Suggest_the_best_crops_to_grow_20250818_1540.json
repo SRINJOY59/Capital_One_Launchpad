@@ -1,0 +1,43 @@
+{
+  "success": true,
+  "title": "Agricultural Research: Suggest the best crops to grow in loamy soil with medium rainfall and limited irrigation.",
+  "objective": "Suggest the best crops to grow in loamy soil with medium rainfall and limited irrigation.",
+  "location": "Global",
+  "focus_areas": [],
+  "planning_results": {
+    "plan_generated": false,
+    "tasks_created": 0,
+    "agent_assignments": 0
+  },
+  "research_results": {},
+  "citation_results": {},
+  "execution_summary": {
+    "phases_completed": 4,
+    "errors_encountered": 0,
+    "execution_log": [
+      "[15:36:40] PLANNING: Starting research planning phase",
+      "[15:36:54] PLANNING: Generated 8 research tasks",
+      "[15:36:54] PLANNING: Agent assignments: 3 specialists",
+      "[15:36:54] RESEARCH: Starting research execution phase",
+      "[15:38:09] RESEARCH: Research completed: 24 successful queries",
+      "[15:38:09] CITATIONS: Starting citation gathering phase",
+      "[15:38:50] CITATIONS: Citation search completed: 0 valid citations found",
+      "[15:38:50] VALIDATION: Starting quality validation phase",
+      "=== QUALITY VALIDATION RESULTS ===",
+      "plan_generated: True",
+      "tasks_created: 8",
+      "research_successful: True",
+      "citations_found: 0",
+      "errors_encountered: 0",
+      "execution_phases_completed: 4",
+      "sources_found: 2",
+      "successful_searches: 24",
+      "research_execution_time: 75.606514",
+      "quality_score: 80",
+      "overall_quality: good",
+      "[15:38:50] VALIDATION: Quality validation completed: good"
+    ],
+    "errors": []
+  },
+  "quality_validation": null
+}

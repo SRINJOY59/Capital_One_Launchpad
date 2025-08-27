@@ -360,3 +360,23 @@ class EnhancedCitationAgent:
                 "valid_count": 0,
                 "total_found": 0
             }
+        
+if __name__ == "__main__":
+    agent = EnhancedCitationAgent()
+
+    result = agent.find_citations_basic(
+        topic="Soil Health Improvement in Wheat Farming",
+        num_citations=5,
+        focus_areas=["sustainability", "fertilizer management"]
+    )
+
+    if result["success"]:
+        print(f"\n✅ Found {result['valid_count']} valid citations (out of {result['total_found']})\n")
+        for i, citation in enumerate(result["citations"], 1):
+            print(f"{i}. {citation.to_apa()}")
+            print(f"   URL: {citation.url}")
+            print(f"   Relevance: {citation.relevance}/10\n")
+    else:
+        print("\n❌ No citations found.")
+        if "error" in result:
+            print(f"Error: {result['error']}")

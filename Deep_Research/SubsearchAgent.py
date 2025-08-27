@@ -159,6 +159,84 @@ class EnhancedSubsearchAgent:
         source_indicators = ['http', 'doi:', 'source:', 'reference:', 'cited', 'published']
         return sum(1 for indicator in source_indicators if indicator.lower() in content.lower())
 
+    def subsearch_single_query(self, query: str, context: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Execute a single query across all available agents and return combined results.
+        This method is required by the workflow.py file.
+        """
+        start_time = datetime.now()
+        results = []
+        
+        # Execute search across all agents for this single query
+        for agent_name in self.agents.keys():
+            result = self._execute_single_search(agent_name, query, context)
+            results.append(result)
+            
+            if result.success:
+                logger.info(f"Single query search - {agent_name}: Found {result.sources_found} sources")
+            else:
+                logger.warning(f"Single query search - {agent_name}: Search failed - {result.error_message}")
+        
+        total_time = (datetime.now() - start_time).total_seconds()
+        successful_results = [r for r in results if r.success]
+        failed_results = [r for r in results if not r.success]
+        
+        # Combine all successful results into a single content block
+        combined_content = self._combine_single_query_results(successful_results, query)
+        
+        # Create sources list from successful results
+        sources = []
+        for result in successful_results:
+            # Extract potential source information from content
+            source_info = {
+                "agent": result.agent_name,
+                "query": result.query,
+                "sources_found": result.sources_found,
+                "execution_time": result.execution_time,
+                "content_preview": result.content[:200] + "..." if len(result.content) > 200 else result.content
+            }
+            sources.append(source_info)
+        
+        return {
+            "success": len(successful_results) > 0,
+            "query": query,
+            "combined_content": combined_content,
+            "sources": sources,
+            "sources_found": len(sources),
+            "successful_searches": len(successful_results),
+            "failed_searches": len(failed_results),
+            "total_sources_found": sum(r.sources_found for r in successful_results),
+            "execution_time": total_time,
+            "agents_used": [r.agent_name for r in successful_results],
+            "errors": [{"agent": r.agent_name, "error": r.error_message} for r in failed_results] if failed_results else []
+        }
+
+    def _combine_single_query_results(self, results: List[SearchResult], original_query: str) -> str:
+        """Combine results from multiple agents for a single query"""
+        if not results:
+            return f"No successful results found for query: {original_query}"
+        
+        combined = f"# Research Results for: {original_query}\n\n"
+        combined += f"*Compiled from {len(results)} successful agent searches*\n\n"
+        
+        # Group results by agent for better organization
+        for i, result in enumerate(results, 1):
+            combined += f"## {result.agent_name} Analysis\n"
+            combined += f"**Sources Found:** {result.sources_found} | **Search Time:** {result.execution_time:.2f}s\n\n"
+            combined += f"{result.content}\n\n"
+            
+            if i < len(results):
+                combined += "---\n\n"
+        
+        # Add summary section
+        total_sources = sum(r.sources_found for r in results)
+        combined += f"\n## Search Summary\n"
+        combined += f"- **Total Sources Found:** {total_sources}\n"
+        combined += f"- **Agents Consulted:** {', '.join([r.agent_name for r in results])}\n"
+        combined += f"- **Query Processed:** {original_query}\n"
+        
+        return combined
+
     def search_parallel(self, queries: List[str], context: Optional[str] = None) -> List[SearchResult]:
         all_results = []
         
@@ -275,3 +353,25 @@ class EnhancedSubsearchAgent:
     def search(self, queries: List[str], context: Optional[str] = None, 
               parallel: bool = True) -> Dict[str, Any]:
         return self.search_optimized(queries, context, parallel)
+    
+if __name__ == "__main__":
+    agent = EnhancedSubsearchAgent()
+
+    query = "Soil Health Improvement in Wheat Farming"
+    context = "Focus on sustainability, fertilizer management, and crop yield optimization."
+
+    result = agent.subsearch_single_query(query, context)
+
+    print("\n🔎 Subsearch Agent Results\n")
+    if result["success"]:
+        print(result["combined_content"])
+        print("\n📌 Sources Summary:")
+        for src in result["sources"]:
+            print(f"- Agent: {src['agent']} | Sources Found: {src['sources_found']} | Time: {src['execution_time']:.2f}s")
+            print(f"  Preview: {src['content_preview']}\n")
+    else:
+        print("❌ No successful results.")
+        if result["errors"]:
+            for err in result["errors"]:
+                print(f"Agent {err['agent']} failed with error: {err['error']}")
+
