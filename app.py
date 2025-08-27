@@ -24,8 +24,8 @@ from Agents.News.routers import router as news_router
 from Agents.Risk_Modelling.routers import router as risk_router
 from Agents.Personalisation.routers import router as personalisation_router
 from Agents.Chart_Agent.routers import router as chart_agent_router
-from Agents.Fertilizer_Recommender.routers import router as fertilizer_recommender_router
 from Deep_Research.routers import router as deep_research_router
+from Agents.Fertilizer_Recommender.routers import router as fertilizer_recommender_router
 from Tools.tool_apis_router import router as tool_apis_router
 
 from workflow import run_workflow
@@ -79,6 +79,7 @@ app.include_router(risk_router)
 app.include_router(fertilizer_recommender_router)
 app.include_router(deep_research_router)
 app.include_router(crop_yield_router)
+app.include_router(deep_research_router)
 app.include_router(personalisation_router)
 app.include_router(chart_agent_router)
 app.include_router(tool_apis_router)
