@@ -360,6 +360,9 @@ def build_hybrid_workflow_graph():
 hybrid_workflow_graph = build_hybrid_workflow_graph()
 compiled_hybrid_graph = hybrid_workflow_graph.compile()
 
+p_optimizer = EntropyOptim(verbose=True, p=0.2)
+
+
 def run_workflow(query: str, mode: str = "rag", image_path: str = None) -> Dict[str, Any]:
     if not internet_checker.is_connected() and hf_model:
         hf_response = hf_model.infer(query)
