@@ -13,7 +13,7 @@ class RouterAgent:
     def __init__(self):
         self.agent = Agent(
             model=Gemini(id="gemini-2.0-flash"),
-            response_model=RoutingDecision,
+            output_schema=RoutingDecision,
             instructions="""
 You are an intelligent agent router for an agricultural AI platform. Your job is to analyze the user's query and select the most relevant agents to handle it.
 

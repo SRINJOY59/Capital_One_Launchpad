@@ -9,7 +9,7 @@ sys.path.append(project_root)
 from agno.agent import Agent
 from agno.models.google import Gemini
 from agno.tools.tavily import TavilyTools
-from Tools.pest_prediction import detect_pests
+# from Tools.pest_prediction import detect_pests
 from dotenv import load_dotenv
 from agno.media import Image
 from pathlib import Path
@@ -28,12 +28,12 @@ class PestPredictionAgent:
         self.agent = Agent(
             model=Gemini(id=model_id),
             markdown=True,
-            show_tool_calls=True,
-            add_history_to_messages=True,
-            num_history_responses=5,
-            response_model=PestPredictionOutput,
+            # show_tool_calls=True,
+            # add_history_to_messages=True,
+            # num_history_responses=5,
+            output_schema=PestPredictionOutput,
             tools=[
-                detect_pests,
+                # detect_pests,
                 TavilyTools()
             ],
             instructions="""

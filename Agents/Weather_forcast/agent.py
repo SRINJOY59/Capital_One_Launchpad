@@ -31,10 +31,10 @@ class WeatherForecastAgent:
         self.agent = Agent(
             model=model,
             tools=[TavilyTools(), get_google_weather_forecast],
-            show_tool_calls=True,
+            # show_tool_calls=True,
             markdown=True,
-            add_history_to_messages=True,
-            num_history_responses=5,
+            # add_history_to_messages=True,
+            # num_history_responses=5,
             instructions="""You are an elite Indian agricultural weather intelligence analyst with deep expertise in Indian meteorology, monsoon patterns, and their impact on agriculture. Your mission is to provide comprehensive, actionable weather insights that help Indian farmers, agricultural officials, and agribusinesses make informed decisions for crop planning, irrigation, and risk management.
 
 CORE RESPONSIBILITIES:

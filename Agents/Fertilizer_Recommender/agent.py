@@ -46,11 +46,11 @@ class FertilizerRecommendationAgent:
             model=Gemini(id=model_id),
             markdown=True,
             debug_mode=False,
-            show_tool_calls=True,
-            add_history_to_messages=True,
-            num_history_responses=5,
+            # show_tool_calls=True,
+            # add_history_to_messages=True,
+            # num_history_responses=5,
             tools=[recommend_fertilizer_tool, GoogleMapTools(), TavilyTools()],
-            response_model=FertilizerOutput,
+            output_schema=FertilizerOutput,
             instructions="""
 You are a fertilizer recommendation expert. Analyze user queries and provide detailed, practical fertilizer advice.
 

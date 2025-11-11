@@ -15,7 +15,7 @@ project_root = os.path.dirname(parent_dir)
 sys.path.append(parent_dir)
 sys.path.append(project_root)
 
-from Tools.crop_disease_detection import detect_crop_disease
+# from Tools.crop_disease_detection import detect_crop_disease
 from agno.tools.tavily import TavilyTools
 load_dotenv()
 
@@ -33,11 +33,11 @@ class CropDiseaseAgent:
             model=Gemini(id=model_id),
             markdown=True,
             debug_mode=False,
-            show_tool_calls=True,
-            add_history_to_messages=True,
-            num_history_responses=5,
-            tools=[detect_crop_disease, TavilyTools()],
-            response_model=CropDiseaseOutput,
+            # show_tool_calls=True,
+            # add_history_to_messages=True,
+            # num_history_responses=5,
+            tools=[TavilyTools()],
+            output_schema=CropDiseaseOutput,
             instructions="""
 You are an advanced crop disease analysis agent. Your task is to analyze crop images for disease symptoms and provide a clear diagnosis and actionable recommendations.
 

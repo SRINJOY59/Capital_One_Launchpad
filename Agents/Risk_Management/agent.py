@@ -23,8 +23,8 @@ class AgriculturalRiskAnalysisAgent:
             self.agent = Agent(
                 model=Gemini(id="gemini-2.0-flash"),
                 tools=[get_agricultural_risk_metrics, TavilyTools(), GoogleSearchTools()],
-                add_history_to_messages=True,
-                num_history_responses=5,
+                # add_history_to_messages=True,
+                # num_history_responses=5,
                 instructions="""
 You are an advanced agricultural risk management analyst. Your role is to deliver comprehensive, actionable risk analysis for agricultural commodities, portfolios, and farming operations.
 
@@ -62,8 +62,8 @@ OUTPUT REQUIREMENTS:
             self.agent = Agent(
                 model=Groq(id=model_id),
                 tools=[get_agricultural_risk_metrics, TavilyTools(), GoogleSearchTools()],
-                add_history_to_messages=True,
-                num_history_responses=5,
+                # add_history_to_messages=True,
+                # num_history_responses=5,
                 instructions="""
 You are an advanced agricultural risk management analyst. Your role is to deliver comprehensive, actionable risk analysis for agricultural commodities, portfolios, and farming operations.
 

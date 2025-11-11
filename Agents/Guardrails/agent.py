@@ -20,7 +20,7 @@ class AgriculturalGuardrailsAgent:
         self.agent = Agent(
             model=Gemini(id=model_id),
             markdown=True,
-            response_model=GuardrailsResponse,
+            output_schema=GuardrailsResponse,
             instructions="""
 You are an agricultural query guardrails agent. Your role is to:
 

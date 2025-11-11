@@ -23,9 +23,9 @@ class LikertScorer:
         self.agent = Agent(
             model=Gemini(id=model_id),
             tools=[TavilyTools(), BaiduSearchTools()],
-            show_tool_calls=True,
+            # show_tool_calls=True,
             markdown=True,
-            response_model=FactCheckResult,
+            output_schema=FactCheckResult,
             instructions="""You are an expert fact-checking analyst specializing in accuracy assessment using the Likert scale. Your role is to evaluate the factual accuracy of given statements against provided reference facts.
 
 **SCORING METHODOLOGY:**

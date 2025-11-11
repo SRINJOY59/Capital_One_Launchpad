@@ -16,7 +16,7 @@ from Agents.Weather_forcast.routers import router as weather_router
 from Agents.Crop_Disease.routers import router as crop_disease_router
 from Agents.Market_Price.routers import router as market_price_router
 from Agents.Image_Analysis.routers import router as image_analysis_router
-from Agents.Pest_prediction.routers import router as pest_prediction_router
+# from Agents.Pest_prediction.routers import router as pest_prediction_router
 from Agents.Crop_Recommender.routers import router as crop_recommender_router
 from Agents.Crop_Yield.routers import router as crop_yield_router
 from Agents.Location_Information.routers import router as location_information_router
@@ -26,7 +26,7 @@ from Agents.Personalisation.routers import router as personalisation_router
 from Agents.Chart_Agent.routers import router as chart_agent_router
 from Deep_Research.routers import router as deep_research_router
 from Agents.Fertilizer_Recommender.routers import router as fertilizer_recommender_router
-from Tools.tool_apis_router import router as tool_apis_router
+# from Tools.tool_apis_router import router as tool_apis_router
 
 from workflow import run_workflow
 
@@ -71,7 +71,7 @@ app.include_router(weather_router)
 app.include_router(crop_disease_router)
 app.include_router(market_price_router)
 app.include_router(image_analysis_router)
-app.include_router(pest_prediction_router)
+# app.include_router(pest_prediction_router)
 app.include_router(crop_recommender_router)
 app.include_router(location_information_router)
 app.include_router(news_router)
@@ -82,7 +82,7 @@ app.include_router(crop_yield_router)
 app.include_router(deep_research_router)
 app.include_router(personalisation_router)
 app.include_router(chart_agent_router)
-app.include_router(tool_apis_router)
+# app.include_router(tool_apis_router)
 
 @app.get("/health", tags=["Health"])
 async def health_check():

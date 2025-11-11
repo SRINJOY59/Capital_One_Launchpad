@@ -26,9 +26,9 @@ class AgriculturalChartAgent:
                 GoogleSearchTools(),
                 YFinanceTools()
             ],
-            show_tool_calls=True,
+            # show_tool_calls=True,
             markdown=True,
-            response_model=AgriculturalChartAgentConfig,
+            output_schema=AgriculturalChartAgentConfig,
             instructions="""
 You are an agricultural data visualization expert with access to real-time data. Your role is to automatically generate relevant charts using REAL DATA ONLY from YFinance and web search tools.
 

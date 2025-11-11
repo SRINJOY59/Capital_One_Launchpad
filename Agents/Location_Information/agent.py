@@ -1,6 +1,6 @@
 from agno.agent import Agent
 from agno.models.google import Gemini
-from agno.tools.google_maps import GoogleMapTools
+# from agno.tools.google_maps import GoogleMapTools
 from agno.tools.tavily import TavilyTools
 from dotenv import load_dotenv
 
@@ -10,7 +10,7 @@ class LocationAgriAssistant:
     def __init__(self, model_id = "gemini-2.0-flash"):
         self.agent = Agent(
             model=Gemini(id=model_id),
-            tools=[GoogleMapTools(), TavilyTools()],
+            tools=[TavilyTools()],
             instructions=(
                 "You are an agricultural and location information specialist. "
                 "For any given location, provide a comprehensive report including:\n"
@@ -29,11 +29,11 @@ class LocationAgriAssistant:
                 "Present all information in a clear, organized format."
             ),
             markdown=True,
-            show_tool_calls=True,
+            # show_tool_calls=True,
         )
         self.formatter_agent = Agent(
             model = Gemini(id="gemini-2.0-flash"),
-            tools = [TavilyTools(), GoogleMapTools()],
+            tools = [TavilyTools()],
             instructions=(
                 "You are a formatting assistant. Your job is to take the output from the main agent and format it nicely for presentation.\n"
                 "If response is not proper then use Tavily tools and Google Maps tools"

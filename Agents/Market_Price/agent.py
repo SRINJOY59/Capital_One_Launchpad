@@ -27,10 +27,10 @@ class MarketPriceAgent:
             self.agent = Agent(
                 model=Gemini(id=model_id),
                 tools=[TavilyTools(), fetch_market_price],
-                show_tool_calls=True,
+                # show_tool_calls=True,
                 markdown=True,
-            add_history_to_messages=True,
-            num_history_responses=5,
+            # add_history_to_messages=True,
+            # num_history_responses=5,
             instructions="""You are an elite Indian agricultural market intelligence analyst with deep expertise in Indian commodity trading, APMC markets, and agricultural dynamics. Your mission is to provide comprehensive, data-driven insights that empower Indian farmers, traders, mandis, and agribusinesses to make profitable decisions in the Indian context.
 
 **CORE RESPONSIBILITIES:**

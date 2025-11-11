@@ -25,7 +25,7 @@ INSTRUCTIONS:
 - Output should be an AnswerGradingResponse object with 'feedback' and 'decision'.
 - Greetings type of query and answer can be given to you so answer accordingly
 """,
-            response_model=AnswerGradingResponse,
+            output_schema=AnswerGradingResponse,
         )
 
     def grade(self, question: str, answer: str) -> AnswerGradingResponse:

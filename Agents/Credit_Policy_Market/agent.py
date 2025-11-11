@@ -12,7 +12,7 @@ from agno.agent import Agent
 from agno.models.google import Gemini
 from dotenv import load_dotenv
 from agno.models.groq import Groq
-from agno.tools.thinking import ThinkingTools
+# from agno.tools.thinking import ThinkingTools
 from agno.tools.tavily import TavilyTools
 from Tools.market_inform_policy_capture import MarketInformPolicyCapture
 
@@ -24,9 +24,9 @@ class CreditPolicyMarketAgent:
         if model_id == "gemini-2.0-flash":
             self.agent = Agent(
                 model=Gemini(id="gemini-2.0-flash"), 
-                tools=[self.market_capture_tool.run_comprehensive_analysis, ThinkingTools(), TavilyTools()], 
-                add_history_to_messages=True, 
-                num_history_responses=5,
+                tools=[self.market_capture_tool.run_comprehensive_analysis, TavilyTools()], 
+                # add_history_to_messages=True, 
+                # num_history_responses=5,
             instructions="""
 You are an expert Credit Policy & Market Agent specialized in agricultural finance and market intelligence. Follow this systematic chain of thought approach:
 
@@ -93,7 +93,7 @@ OUTPUT REQUIREMENTS:
         else:
             self.agent = Agent(
                 model=Groq(id=model_id),
-                tools=[self.market_capture_tool.run_comprehensive_analysis, ThinkingTools(), TavilyTools()],
+                tools=[self.market_capture_tool.run_comprehensive_analysis, TavilyTools()],
                 add_history_to_messages=True,
                 num_history_responses=5,
                 instructions="""

@@ -5,7 +5,7 @@ from typing import Optional, List
 from dotenv import load_dotenv
 from agno.agent import Agent
 from agno.models.google import Gemini
-from agno.tools.google_maps import GoogleMapTools
+# from agno.tools.google_maps import GoogleMapTools
 from agno.tools.tavily import TavilyTools
 from agno.tools.googlesearch import GoogleSearchTools
 from agno.tools.reasoning import ReasoningTools
@@ -21,7 +21,7 @@ project_root = os.path.dirname(parent_dir)
 sys.path.append(parent_dir)
 sys.path.append(project_root)
 
-from Tools.commodities_price_forcasting import predict_future_days
+# from Tools.commodities_price_forcasting import predict_future_days
 from Tools.fetchMarketPrice import fetch_market_price
 from Tools.fetchWeatherForecast import get_google_weather_forecast
 from Tools.getCropYield import crop_yield_inference
@@ -49,7 +49,7 @@ class AgentFactory:
                 "Given any place or boundary, triangulate precise coordinates, administrative hierarchies, and proximal assets relevant to agriculture, logistics, and relief operations. "
                 "Synthesize outputs that are immediately actionable for government agencies, cooperatives, NGOs, and insurers to drive field deployment, last-mile advisories, and policy triggers."
             ),
-            tools=[GoogleMapTools(), TavilyTools(), GoogleSearchTools(), DuckDuckGoTools()],
+            tools=[TavilyTools(), GoogleSearchTools(), DuckDuckGoTools()],
         )
         return Agent(
             name=cfg.name,
@@ -96,7 +96,7 @@ class AgentFactory:
             ),
             tools=[
                 fetch_market_price,
-                predict_future_days,
+                # predict_future_days,
                 crop_yield_inference,
                 get_agricultural_risk_metrics,
                 TavilyTools(),

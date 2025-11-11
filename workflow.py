@@ -5,8 +5,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from langgraph.graph import StateGraph, END, START
 
-from RAG.workflow import Workflow
-from RAG.parallel_rag_main import ParallelRAGSystem
+# from RAG.workflow import Workflow
+# from RAG.parallel_rag_main import ParallelRAGSystem
 from Agents.Router import RouterAgent
 from Agents.Crop_Recommender.agent import CropRecommenderAgent
 from Agents.Weather_forcast.agent import WeatherForecastAgent
@@ -29,18 +29,18 @@ from Agents.Chart_Agent.agent import AgriculturalChartAgent
 from Agents.Fertilizer_Recommender.agent import FertilizerRecommendationAgent
 from Agents.Guardrails.agent import AgriculturalGuardrailsAgent
 from utils.Internet_checker import InternetChecker
-from utils.hf_model import HFModel
+# from utils.hf_model import HFModel
 
 internet_checker = InternetChecker()
-base_model_dir = "./models/Qwen1.5-Base"
-adapter_dir = "./models/Qwen_1.5_Finetuned"
-hf_model = None
+# base_model_dir = "./models/Qwen1.5-Base"
+# adapter_dir = "./models/Qwen_1.5_Finetuned"
+# hf_model = None
 
-if not internet_checker.is_connected():
-    print("Offline mode detected. Using HF Model for inference.")
-    hf_model = HFModel(base_model_dir, adapter_dir)
-else: 
-    print("Online mode detected")
+# if not internet_checker.is_connected():
+#     print("Offline mode detected. Using HF Model for inference.")
+#     hf_model = HFModel(base_model_dir, adapter_dir)
+# else: 
+#     print("Online mode detected")
 
 guardrails_agent = AgriculturalGuardrailsAgent()
 crop_recommender_agent = CropRecommenderAgent()
@@ -87,10 +87,10 @@ class MainWorkflowState(TypedDict):
     is_agriculture_related: bool
     guardrails_response: str
 
-def run_adaptive_rag(query: str) -> str:
-    rag_system = ParallelRAGSystem(model="gemini-2.0-flash", k=3)
-    result = rag_system.process_query(query)
-    return result.get("synthesized_answer", "")
+# def run_adaptive_rag(query: str) -> str:
+#     rag_system = ParallelRAGSystem(model="gemini-2.0-flash", k=3)
+#     result = rag_system.process_query(query)
+#     return result.get("synthesized_answer", "")
 
 def run_router_agent(query: str, image_path: str = None) -> Dict[str, Any]:
     router = RouterAgent()
@@ -235,22 +235,15 @@ def guardrails_node(state: MainWorkflowState):
         }
 
 def rag_node(state: MainWorkflowState):
-    rag_response = run_adaptive_rag(state["query"])
-    documents = []
-    extractions = ""
-    if isinstance(rag_response, dict):
-        documents = rag_response.get("documents", [])
-        extractions = rag_response.get("extractions", "")
-        generation = rag_response.get("generation", "")
-    else:
-        generation = rag_response
+    # RAG system disabled - returning fallback message
+    rag_response = "RAG system is currently disabled. Please use tooling mode for agricultural queries."
     
     return {
         "rag_response": rag_response,
         "synthesized_result": rag_response,
-        "documents": documents,
-        "extractions": extractions,
-        "generation": generation,
+        "documents": [],
+        "extractions": "",
+        "generation": rag_response,
         "current_mode": "rag"
     }
 
@@ -403,13 +396,13 @@ def build_hybrid_workflow_graph():
     graph = StateGraph(MainWorkflowState)
     
     graph.add_node("guardrails", guardrails_node)
-    graph.add_node("guardrails_response", guardrails_response_node)
+    graph.add_node("guardrails_end_node", guardrails_response_node)
     graph.add_node("greeting_response", greeting_response_node)
     graph.add_node("rag", rag_node)
     graph.add_node("router", router_node)
     graph.add_node("agent_calls", agent_calls_node)
     graph.add_node("synthesize_tooling", synthesize_tooling_node)
-    graph.add_node("grading", grading_node)
+    graph.add_node("grading_node", grading_node)
     graph.add_node("switch_to_tooling", switch_to_tooling_node)
     graph.add_node("fallback", fallback_node)
     
@@ -419,23 +412,23 @@ def build_hybrid_workflow_graph():
         "guardrails", 
         guardrails_routing_edge, 
         {
-            "guardrails_end": "guardrails_response",
+            "guardrails_end": "guardrails_end_node",
             "greeting_end": "greeting_response",
             "rag": "rag", 
             "router": "router"
         }
     )
     
-    graph.add_edge("guardrails_response", END)
+    graph.add_edge("guardrails_end_node", END)
     graph.add_edge("greeting_response", END)
     
-    graph.add_edge("rag", "grading")
+    graph.add_edge("rag", "grading_node")
     graph.add_edge("router", "agent_calls")
     graph.add_edge("agent_calls", "synthesize_tooling")
-    graph.add_edge("synthesize_tooling", "grading")
+    graph.add_edge("synthesize_tooling", "grading_node")
     
     graph.add_conditional_edges(
-        "grading", 
+        "grading_node", 
         mode_decision_edge, 
         {
             "end": END, 
@@ -453,22 +446,23 @@ hybrid_workflow_graph = build_hybrid_workflow_graph()
 compiled_hybrid_graph = hybrid_workflow_graph.compile()
 
 def run_workflow(query: str, mode: str = "rag", image_path: str = None) -> Dict[str, Any]:
-    if not internet_checker.is_connected() and hf_model:
-        hf_response = hf_model.infer(query)
-        return {
-            "answer": hf_response,
-            "answer_quality_grade": {"is_good_answer": True, "reasoning": "Offline mode - HF Model response"},
-            "is_answer_complete": True,
-            "final_mode": "offline",
-            "switched_modes": False,
-            "is_image_query": image_path is not None,
-            "chart_path": "",
-            "chart_extra_message": "",
-            "is_agriculture_related": True,
-            "guardrails_passed": True,
-            "guardrails_category": "agriculture",
-            "guardrails_confidence": 1.0
-        }
+    # Offline mode with HF Model is disabled
+    # if not internet_checker.is_connected() and hf_model:
+    #     hf_response = hf_model.infer(query)
+    #     return {
+    #         "answer": hf_response,
+    #         "answer_quality_grade": {"is_good_answer": True, "reasoning": "Offline mode - HF Model response"},
+    #         "is_answer_complete": True,
+    #         "final_mode": "offline",
+    #         "switched_modes": False,
+    #         "is_image_query": image_path is not None,
+    #         "chart_path": "",
+    #         "chart_extra_message": "",
+    #         "is_agriculture_related": True,
+    #         "guardrails_passed": True,
+    #         "guardrails_category": "agriculture",
+    #         "guardrails_confidence": 1.0
+    #     }
     
     is_image_query = image_path is not None
     

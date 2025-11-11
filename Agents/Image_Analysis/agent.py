@@ -12,9 +12,9 @@ class ImageAgent:
             model=Gemini(id=model_id), 
             markdown=True,
             debug_mode=False,
-            add_history_to_messages=True,
-            num_history_responses=5,
-            show_tool_calls=False,
+            # add_history_to_messages=True,
+            # num_history_responses=5,
+            # show_tool_calls=False,
             instructions=[
                 "You are an AI agent that can generate text descriptions based on an image.",
                 "You have to return a text response describing the image.",

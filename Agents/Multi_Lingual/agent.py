@@ -26,9 +26,9 @@ class MultiLingualAgent:
         self.agent = Agent(
             model=model,
             markdown=True,
-            show_tool_calls=True,
-            add_history_to_messages=True,
-            num_history_responses=5,
+            # show_tool_calls=True,
+            # add_history_to_messages=True,
+            # num_history_responses=5,
             tools=[self.translate_text],
             instructions="""You are a multilingual agricultural expert specializing in code-switched and colonial mixed languages. You can understand and respond to questions in various languages and their mixtures.
 

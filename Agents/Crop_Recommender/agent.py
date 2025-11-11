@@ -4,7 +4,7 @@ from agno.agent import Agent
 from agno.models.google import Gemini
 from agno.tools.tavily import TavilyTools
 from pydantic import BaseModel
-from agno.tools.google_maps import GoogleMapTools
+# from agno.tools.google_maps import GoogleMapTools
 from dotenv import load_dotenv
 from typing import Optional
 
@@ -29,7 +29,7 @@ class CropRecommenderAgent:
    def __init__(self):
        self.agent = Agent(
            model=Gemini(id="gemini-2.0-flash"),
-           tools=[TavilyTools(), GoogleMapTools(), get_google_weather_forecast, get_all_model_predictions, get_consensus_prediction, get_crop_recommendation],
+           tools=[TavilyTools(), get_google_weather_forecast, get_all_model_predictions, get_consensus_prediction, get_crop_recommendation],
            instructions="""
 You are an expert crop recommendation agent specializing in Indian agriculture. Your expertise covers soil analysis, climate assessment, weather patterns, and agricultural economics.
 
@@ -74,9 +74,8 @@ RESPONSE STYLE:
 - Focus on practical, implementable advice
 - Avoid mentioning internal tool operations
 """,
-           show_tool_calls=False,
            markdown=True,
-           response_model=CropRecommendation,
+           output_schema=CropRecommendation,
        )
 
    def respond(self, prompt: str) -> CropRecommendation:

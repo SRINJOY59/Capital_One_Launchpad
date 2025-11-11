@@ -26,10 +26,10 @@ class AgriculturalWebScrappingAgent:
         self.agent = Agent(
             model=model,
             tools=[scrape_agri_prices, scrape_policy_updates, scrape_links, TavilyTools()],
-            show_tool_calls=True,
-            markdown=True,
-            add_history_to_messages=True,
-            num_history_responses=5,
+            # show_tool_calls=True,
+            # markdown=True,
+            # add_history_to_messages=True,
+            # num_history_responses=5,
             instructions="""
 You are an agricultural web data extraction and search specialist. Your job is to provide actionable, easy-to-understand insights by scraping and searching for agricultural market prices, policy updates, and relevant links from the web.
 

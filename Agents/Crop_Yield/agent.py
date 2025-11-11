@@ -13,7 +13,7 @@ sys.path.append(project_root)
 
 from Tools.getCropYield import crop_yield_inference
 from Tools.fetchWeatherForecast import get_google_weather_forecast
-from agno.tools.google_maps import GoogleMapTools
+# from agno.tools.google_maps import GoogleMapTools
 from agno.tools.tavily import TavilyTools
 
 
@@ -23,7 +23,7 @@ class CropYieldAssistant:
     def __init__(self):
         self.agent = Agent(
             model=Gemini(id="gemini-2.5-pro"),
-            tools=[TavilyTools(), GoogleMapTools(), get_google_weather_forecast],
+            tools=[TavilyTools(), get_google_weather_forecast],
             instructions="""
 You are an expert agricultural consultant specializing in crop yield predictions and farming optimization.
 
