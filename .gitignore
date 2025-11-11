@@ -1,0 +1,108 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Environment
+.env
+.env.local
+.env.production
+.venv
+newenv/
+myenv/
+venv/
+env/
+ENV/
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Logs
+*.log
+logs/
+log/
+
+# Cache
+cache/
+.cache/
+__pycache__/
+.pytest_cache/
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# Models (large files)
+Qwen_1.5_Finetuned/
+Qwen1.5-Base/
+*.pkl
+*.joblib
+*.h5
+*.hdf5
+*.safetensors
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Upload files (for production, you might want to keep this in development)
+uploads/*.jpg
+uploads/*.png
+uploads/*.jpeg
+uploads/*.gif
+uploads/*.pdf
+uploads/*.doc
+uploads/*.docx
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+
+# Secrets and keys
+secrets/
+keys/
+ai_env/

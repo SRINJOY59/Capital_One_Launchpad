@@ -1,0 +1,14 @@
+{
+  "success": false,
+  "error": "Final state is not a valid ResearchState object.",
+  "title": "Unknown",
+  "objective": "Rice cultivation in North East India",
+  "location": "India",
+  "focus_areas": [],
+  "planning_results": {},
+  "research_results": {},
+  "citation_results": {},
+  "final_report": null,
+  "execution_summary": {},
+  "quality_validation": null
+}

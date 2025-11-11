@@ -1,0 +1,67 @@
+version: "3.8"
+
+services:
+  agricultural-ai-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: agricultural-ai-dev
+    ports:
+      - "8000:8000"
+    environment:
+      # Copy from your .env file or set here
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - COHERE_API_KEY=${COHERE_API_KEY}
+      - HUGGINGFACEHUB_API_TOKEN=${HUGGINGFACEHUB_API_TOKEN}
+      - PINECONE_API_KEY=${PINECONE_API_KEY}
+      - TAVILY_API_KEY=${TAVILY_API_KEY}
+      - LANGCHAIN_API_KEY=${LANGCHAIN_API_KEY}
+      - SERPER_API_KEY=${SERPER_API_KEY}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - GOOGLE_WEATHER_API_KEY=${GOOGLE_WEATHER_API_KEY}
+      - GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY}
+      - DEBUG=True
+      - LOG_LEVEL=DEBUG
+    volumes:
+      # Mount source code for development
+      - .:/app
+      - ./uploads:/app/uploads
+      - ./models:/app/models
+      - ./cache:/app/cache
+      - ./logs:/app/logs
+    command: uvicorn app:app --host 0.0.0.0 --port 8000 --reload --log-level debug
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Optional: Redis for caching
+  redis:
+    image: redis:7-alpine
+    container_name: agricultural-ai-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  # Optional: PostgreSQL for data storage
+  postgres:
+    image: postgres:15-alpine
+    container_name: agricultural-ai-db
+    environment:
+      - POSTGRES_DB=agricultural_ai
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+  postgres_data:
